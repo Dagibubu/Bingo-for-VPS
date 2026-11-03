@@ -1,0 +1,2843 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="utf-8">
+    
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vip Bingo — Admin Dashboard</title>
+    <script src="/js/api.js?v=20261101"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --sidebar-width: 269px;
+            --sidebar-bg: #343a40;
+            --sidebar-input: #454d55;
+            --primary: #007bff;
+            --primary-hover: #0056b3;
+            --success: #28a745;
+            --success-dark: #218838;
+            --warning: #fd7e14;
+            --warning-dark: #e8590c;
+            --danger: #dc3545;
+            --danger-dark: #b02a37;
+            --page-bg: #f4f6f9;
+            --text-main: #212529;
+            --text-muted: #6c757d;
+            --text-light: #c2c7d0;
+            --navbar-bg: #ffffff;
+            --border-light: #dee2e6;
+            --nav-height: 68px;
+            --brand-height: 60px;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        html, body { height: 100%; }
+
+        body {
+            font-family: "Source Sans 3", "Source Sans Pro",
+                         "Helvetica Neue", Arial, sans-serif;
+            color: var(--text-main);
+            background: var(--page-bg);
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* ============================================================
+           SIDEBAR
+        ============================================================ */
+        .sidebar {
+            position: fixed;
+            inset: 0 auto 0 0;
+            width: var(--sidebar-width);
+            background: var(--sidebar-bg);
+            color: var(--text-light);
+            overflow-y: auto;
+            z-index: 1000;
+            transition: transform 0.25s ease;
+        }
+
+        .sidebar::-webkit-scrollbar { width: 6px; }
+        .sidebar::-webkit-scrollbar-thumb {
+            background: #56606a;
+            border-radius: 3px;
+        }
+
+        .brand {
+            height: var(--brand-height);
+            padding: 18px 16px;
+            font-size: 20px;
+            font-weight: 700;
+            color: #dee2e6;
+            border-bottom: 1px solid #4b545c;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .brand-logo {
+            width: 26px;
+            height: 26px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #007bff, #0056b3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 800;
+            font-size: 13px;
+            flex-shrink: 0;
+        }
+
+        .sidebar-nav { padding: 8px 8px 24px; }
+
+        .nav-section-label {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: #6c757d;
+            padding: 12px 12px 6px;
+            font-weight: 600;
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            min-height: 43px;
+            padding: 10px 12px;
+            color: var(--text-light);
+            text-decoration: none;
+            border-radius: 4px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background 0.15s, color 0.15s;
+            user-select: none;
+            border: none;
+            background: transparent;
+            width: 100%;
+            text-align: left;
+            font-family: inherit;
+        }
+
+        .nav-item:hover:not(.active) {
+            background: #3f474e;
+            color: #e9ecef;
+        }
+
+        .nav-item.active {
+            color: white;
+            background: var(--primary);
+        }
+
+        .nav-item svg {
+            width: 18px;
+            height: 18px;
+            flex-shrink: 0;
+            stroke-width: 2;
+        }
+
+        /* ============================================================
+           MAIN WRAPPER
+        ============================================================ */
+        .main-wrapper {
+            min-height: 100vh;
+            margin-left: var(--sidebar-width);
+            display: flex;
+            flex-direction: column;
+            transition: margin-left 0.25s ease;
+        }
+
+        /* ============================================================
+           TOP NAVBAR
+        ============================================================ */
+        .top-navbar {
+            height: var(--nav-height);
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 24px;
+            background: var(--navbar-bg);
+            border-bottom: 1px solid var(--border-light);
+            position: sticky;
+            top: 0;
+            z-index: 900;
+        }
+
+        .navbar-left,
+        .navbar-right {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .icon-btn {
+            width: 38px;
+            height: 38px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            border-radius: 4px;
+            color: #6c757d;
+        }
+
+        .icon-btn:hover {
+            background: #f1f3f5;
+            color: var(--text-main);
+        }
+
+        .icon-btn svg { width: 18px; height: 18px; stroke-width: 2; }
+
+        .home-link {
+            font-size: 16px;
+            color: #6c757d;
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .home-link:hover { color: var(--primary); }
+
+        .language-button {
+            height: 41px;
+            min-width: 58px;
+            padding: 0 16px;
+            color: white;
+            background: var(--primary);
+            border: 0;
+            border-radius: 4px;
+            font-weight: 700;
+            font-size: 13px;
+            cursor: pointer;
+        }
+
+        .language-button:hover { background: var(--primary-hover); }
+
+        .user-chip {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 4px 12px 4px 4px;
+            background: #f1f3f5;
+            border-radius: 20px;
+        }
+
+        .user-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #007bff, #0056b3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 700;
+            font-size: 13px;
+        }
+
+        .user-name { font-size: 14px; font-weight: 600; }
+
+        /* ============================================================
+           MAIN CONTENT
+        ============================================================ */
+        .main-content {
+            flex: 1;
+            padding: 20px 16px 24px;
+        }
+
+        .content-inner {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .page-title {
+            margin: 0 0 6px;
+            font-size: 29px;
+            font-weight: 400;
+            color: var(--text-main);
+        }
+
+        .breadcrumb {
+            margin-bottom: 20px;
+            font-size: 16px;
+            color: #495057;
+        }
+
+        .breadcrumb a { color: var(--primary); text-decoration: none; }
+        .breadcrumb a:hover { text-decoration: underline; }
+        .breadcrumb .sep { color: #adb5bd; margin: 0 4px; }
+
+        /* ============================================================
+           CARDS
+        ============================================================ */
+        .card {
+            background: white;
+            border-radius: 4px;
+            border: 1px solid var(--border-light);
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            margin-bottom: 20px;
+            overflow: hidden;
+        }
+
+        .card-header {
+            padding: 15px 20px;
+            background: #f8f9fa;
+            border-bottom: 1px solid var(--border-light);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+        }
+
+        .card-header h2 {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--text-main);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .card-body { padding: 20px; }
+
+        .badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+            background: #e9ecef;
+            color: #495057;
+        }
+
+        .badge.success { background: #d4edda; color: #155724; }
+        .badge.warning { background: #fff3cd; color: #856404; }
+        .badge.danger { background: #f8d7da; color: #721c24; }
+        .badge.info { background: #cce5ff; color: #004085; }
+        .badge.gold { background: linear-gradient(135deg, #ffd700, #ff8c00); color: #4a2800; }
+
+        /* ============================================================
+           WALLET BALANCE DISPLAY
+        ============================================================ */
+        .wallet-balance-display {
+            text-align: center;
+            padding: 24px;
+            background: #f8f9fa;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            border: 1px dashed var(--border-light);
+        }
+
+        .wallet-balance-display .label {
+            font-size: 13px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .wallet-balance-display .balance {
+            font-size: 42px;
+            font-weight: 700;
+            color: var(--success);
+            font-variant-numeric: tabular-nums;
+        }
+
+        .wallet-balance-display .meta {
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-top: 6px;
+        }
+
+        /* ============================================================
+           FORM
+        ============================================================ */
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 16px;
+            margin-bottom: 16px;
+        }
+
+        .form-grid.cols-3 {
+            grid-template-columns: repeat(3, 1fr);
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 6px;
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--text-main);
+        }
+
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 10px 14px;
+            font-size: 14px;
+            font-family: inherit;
+            color: var(--text-main);
+            background: white;
+            border: 1.5px solid var(--border-light);
+            border-radius: 4px;
+            outline: none;
+            transition: border-color 0.15s, box-shadow 0.15s;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(0,123,255,0.12);
+        }
+
+        .form-group input:disabled {
+            background: #f1f3f5;
+            color: var(--text-muted);
+            cursor: not-allowed;
+        }
+
+        .form-hint {
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-top: 4px;
+        }
+
+        /* ============================================================
+           BUTTONS
+        ============================================================ */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 10px 20px;
+            font-size: 14px;
+            font-weight: 600;
+            font-family: inherit;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background 0.15s, transform 0.1s;
+            text-decoration: none;
+            color: white;
+        }
+
+        .btn:active { transform: scale(0.98); }
+
+        .btn-primary { background: var(--primary); }
+        .btn-primary:hover { background: var(--primary-hover); }
+
+        .btn-success { background: var(--success); }
+        .btn-success:hover { background: var(--success-dark); }
+
+        .btn-warning { background: var(--warning); }
+        .btn-warning:hover { background: var(--warning-dark); }
+
+        .btn-danger { background: var(--danger); }
+        .btn-danger:hover { background: var(--danger-dark); }
+
+        .btn-outline {
+            background: white;
+            color: var(--text-main);
+            border: 1px solid var(--border-light);
+        }
+
+        .btn-outline:hover { background: #f1f3f5; }
+
+        .btn-sm { padding: 5px 12px; font-size: 12px; }
+
+        .btn-row {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        /* ============================================================
+           STATS GRID
+        ============================================================ */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 16px;
+            margin-bottom: 20px;
+        }
+
+        .stats-grid.cols-3 {
+            grid-template-columns: repeat(3, 1fr);
+        }
+
+        .stat-card {
+            background: white;
+            border-radius: 4px;
+            border: 1px solid var(--border-light);
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            padding: 18px 20px;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            transition: transform 0.15s, box-shadow 0.15s;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+
+        .stat-icon {
+            width: 44px;
+            height: 44px;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            color: white;
+            font-size: 20px;
+        }
+
+        .stat-icon.blue { background: #007bff; }
+        .stat-icon.green { background: #28a745; }
+        .stat-icon.orange { background: #fd7e14; }
+        .stat-icon.purple { background: #6f42c1; }
+        .stat-icon.teal { background: #17a2b8; }
+        .stat-icon.red { background: #dc3545; }
+        .stat-icon.gold { background: linear-gradient(135deg, #ffd700, #ff8c00); color: #4a2800; }
+
+        .stat-body { min-width: 0; flex: 1; }
+
+        .stat-title {
+            font-size: 12px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .stat-value {
+            font-size: 22px;
+            font-weight: 700;
+            color: var(--text-main);
+            font-variant-numeric: tabular-nums;
+        }
+
+        /* ============================================================
+           TABLE
+        ============================================================ */
+        .table-container {
+            overflow-x: auto;
+            max-height: 420px;
+            overflow-y: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+        }
+
+        th {
+            text-align: left;
+            padding: 12px;
+            background: #f8f9fa;
+            color: var(--text-main);
+            font-weight: 600;
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            border-bottom: 1px solid var(--border-light);
+        }
+
+        td {
+            padding: 12px;
+            border-bottom: 1px solid #f1f3f5;
+            color: var(--text-main);
+        }
+
+        tr:hover td { background: #f8f9fa; }
+
+        .status-pill {
+            display: inline-block;
+            padding: 3px 10px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .status-running { background: #d4edda; color: #155724; }
+        .status-waiting { background: #fff3cd; color: #856404; }
+        .status-finished { background: #e2e3e5; color: #383d41; }
+        .status-paused { background: #cce5ff; color: #004085; }
+
+        /* ============================================================
+           GAME STATE PANEL
+        ============================================================ */
+        .game-state-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 16px;
+        }
+
+        .game-state-item {
+            text-align: center;
+            padding: 14px;
+            background: #f8f9fa;
+            border-radius: 4px;
+            border: 1px solid var(--border-light);
+        }
+
+        .game-state-item .label {
+            font-size: 12px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            font-weight: 600;
+            margin-bottom: 6px;
+        }
+
+        .game-state-item .value {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--text-main);
+        }
+
+        .last-called-wrap {
+            margin-top: 16px;
+            padding: 14px;
+            background: #f8f9fa;
+            border-radius: 4px;
+            border: 1px solid var(--border-light);
+        }
+
+        .last-called-wrap .label {
+            font-size: 12px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+
+        .called-chip {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 32px;
+            height: 32px;
+            background: linear-gradient(135deg, #007bff, #0056b3);
+            color: white;
+            border-radius: 50%;
+            font-weight: 700;
+            font-size: 13px;
+            margin: 3px;
+        }
+
+        /* ============================================================
+           TOGGLE SWITCH
+        ============================================================ */
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 58px;
+            height: 30px;
+            flex-shrink: 0;
+        }
+
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            inset: 0;
+            background-color: #ccc;
+            transition: 0.3s;
+            border-radius: 30px;
+        }
+
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 24px;
+            width: 24px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: 0.3s;
+            border-radius: 50%;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.25);
+        }
+
+        .toggle-switch input:checked + .toggle-slider {
+            background-color: var(--success);
+        }
+
+        .toggle-switch input:checked + .toggle-slider:before {
+            transform: translateX(28px);
+        }
+
+        .toggle-switch input:disabled + .toggle-slider {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .toggle-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            padding: 16px 20px;
+            background: #f8f9fa;
+            border-radius: 6px;
+            border: 1px solid var(--border-light);
+            margin-bottom: 16px;
+        }
+
+        .toggle-row .toggle-info {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            flex: 1;
+        }
+
+        .toggle-row .toggle-title {
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--text-main);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .toggle-row .toggle-desc {
+            font-size: 13px;
+            color: var(--text-muted);
+        }
+
+        /* ============================================================
+           JACKPOT PANEL
+        ============================================================ */
+        .jackpot-panel {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 20px;
+            padding: 20px;
+            background: linear-gradient(135deg, #fff9e6, #fff4cc);
+            border: 1.5px solid #ffd700;
+            border-radius: 8px;
+            flex-wrap: wrap;
+        }
+
+        .jackpot-panel.is-on {
+            background: linear-gradient(135deg, #fffbe6, #ffe9a8);
+            box-shadow: 0 0 0 3px rgba(255,215,0,0.25);
+        }
+
+        .jackpot-info {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            flex: 1;
+            min-width: 240px;
+        }
+
+        .jackpot-icon {
+            width: 54px;
+            height: 54px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #ffd700, #ff8c00);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+            flex-shrink: 0;
+            box-shadow: 0 3px 10px rgba(255,140,0,0.35);
+        }
+
+        .jackpot-text .jp-title {
+            font-size: 17px;
+            font-weight: 700;
+            color: #4a2800;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .jackpot-text .jp-desc {
+            font-size: 13px;
+            color: #7a5c1e;
+            margin-top: 3px;
+        }
+
+        .jackpot-status-label {
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            padding: 3px 10px;
+            border-radius: 10px;
+        }
+
+        .jackpot-status-label.on { background: #d4edda; color: #155724; }
+        .jackpot-status-label.off { background: #e9ecef; color: #495057; }
+
+        /* ============================================================
+           PROGRESS BAR
+        ============================================================ */
+        .progress-wrap {
+            margin-top: 18px;
+        }
+
+        .progress-header {
+            display: flex;
+            justify-content: space-between;
+            font-size: 13px;
+            margin-bottom: 6px;
+        }
+
+        .progress-header .label {
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .progress-header .value {
+            font-weight: 700;
+            color: var(--text-main);
+            font-variant-numeric: tabular-nums;
+        }
+
+        .progress-bar {
+            height: 12px;
+            background: #e9ecef;
+            border-radius: 6px;
+            overflow: hidden;
+        }
+
+        .progress-bar-fill {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, #ffd700, #ff8c00);
+            transition: width 0.5s ease;
+            border-radius: 6px;
+        }
+
+        .progress-bar-fill.armed {
+            animation: progressPulse 1.5s ease-in-out infinite;
+        }
+
+        @keyframes progressPulse {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(255,140,0,0.5); }
+            50% { box-shadow: 0 0 12px 4px rgba(255,140,0,0.5); }
+        }
+
+        .armed-badge {
+            display: none;
+            margin-top: 10px;
+            text-align: center;
+            padding: 10px;
+            background: linear-gradient(135deg, #ffd700, #ff8c00);
+            color: #4a2800;
+            border-radius: 6px;
+            font-weight: 700;
+            font-size: 14px;
+            letter-spacing: 0.03em;
+            box-shadow: 0 3px 12px rgba(255,140,0,0.35);
+        }
+
+        .armed-badge.show {
+            display: block;
+            animation: armedPulse 1.5s ease-in-out infinite;
+        }
+
+        @keyframes armedPulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.02); }
+        }
+
+        /* ============================================================
+           COMMISSION TIER
+        ============================================================ */
+        .tier-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 14px;
+            margin-bottom: 20px;
+        }
+
+        .tier-card {
+            background: white;
+            border: 1.5px solid var(--border-light);
+            border-radius: 8px;
+            padding: 18px 16px;
+            cursor: pointer;
+            transition: border-color 0.15s, box-shadow 0.15s, transform 0.1s;
+            position: relative;
+            user-select: none;
+        }
+
+        .tier-card:hover {
+            border-color: var(--primary);
+            box-shadow: 0 3px 12px rgba(0,123,255,0.15);
+            transform: translateY(-2px);
+        }
+
+        .tier-card.selected {
+            border-color: var(--primary);
+            background: #f0f7ff;
+            box-shadow: 0 0 0 3px rgba(0,123,255,0.18);
+        }
+
+        .tier-card.selected::after {
+            content: "✓";
+            position: absolute;
+            top: 10px;
+            right: 12px;
+            width: 22px;
+            height: 22px;
+            background: var(--primary);
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 13px;
+            font-weight: 700;
+        }
+
+        .tier-card.active-auto {
+            border-color: var(--success);
+            background: #f0fdf4;
+            box-shadow: 0 0 0 3px rgba(40,167,69,0.18);
+        }
+
+        .tier-card.active-auto::after {
+            content: "AUTO";
+            background: var(--success);
+            width: auto;
+            min-width: 22px;
+            padding: 0 6px;
+            border-radius: 11px;
+            font-size: 10px;
+        }
+
+        .tier-card.disabled {
+            opacity: 0.55;
+            pointer-events: none;
+        }
+
+        .tier-card .tier-name {
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: var(--text-muted);
+            margin-bottom: 8px;
+        }
+
+        .tier-rate-wrap {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin-bottom: 6px;
+        }
+
+        .tier-card .tier-rate {
+            font-size: 32px;
+            font-weight: 800;
+            color: var(--primary);
+            line-height: 1;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .tier-card .tier-rate-edit-btn {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: #e9ecef;
+            border: none;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            color: #495057;
+            font-size: 12px;
+            transition: background 0.15s, color 0.15s;
+            padding: 0;
+            flex-shrink: 0;
+        }
+
+        .tier-card .tier-rate-edit-btn:hover {
+            background: var(--primary);
+            color: white;
+        }
+
+        .tier-rate-input {
+            width: 78px;
+            padding: 4px 8px;
+            font-size: 24px;
+            font-weight: 800;
+            color: var(--primary);
+            border: 1.5px solid var(--primary);
+            border-radius: 4px;
+            outline: none;
+            font-family: inherit;
+            background: white;
+            font-variant-numeric: tabular-nums;
+            text-align: right;
+        }
+
+        .tier-rate-suffix {
+            font-size: 22px;
+            font-weight: 800;
+            color: var(--primary);
+            line-height: 1;
+        }
+
+        .tier-card .tier-range {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-main);
+            padding: 4px 0;
+            border-top: 1px solid var(--border-light);
+            border-bottom: 1px solid var(--border-light);
+            margin: 10px 0;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .tier-card .tier-desc {
+            font-size: 12px;
+            color: var(--text-muted);
+            line-height: 1.5;
+        }
+
+        .commission-summary {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+            margin-top: 20px;
+        }
+
+        .commission-summary .summary-item {
+            text-align: center;
+            padding: 16px;
+            background: #f8f9fa;
+            border-radius: 6px;
+            border: 1px solid var(--border-light);
+        }
+
+        .commission-summary .summary-item .label {
+            font-size: 12px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            font-weight: 600;
+            margin-bottom: 6px;
+        }
+
+        .commission-summary .summary-item .value {
+            font-size: 22px;
+            font-weight: 700;
+            color: var(--text-main);
+            font-variant-numeric: tabular-nums;
+        }
+
+        .commission-summary .summary-item .value.green { color: var(--success); }
+        .commission-summary .summary-item .value.orange { color: var(--warning); }
+        .commission-summary .summary-item .value.blue { color: var(--primary); }
+
+        /* ============================================================
+           CALLING INTERVAL PANEL
+        ============================================================ */
+        .interval-panel {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            padding: 20px;
+            background: linear-gradient(135deg, #eef6ff, #e0efff);
+            border: 1.5px solid #b6daff;
+            border-radius: 8px;
+            flex-wrap: wrap;
+        }
+
+        .interval-icon {
+            width: 54px;
+            height: 54px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #17a2b8, #0d5e6b);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 26px;
+            color: white;
+            flex-shrink: 0;
+            box-shadow: 0 3px 10px rgba(23,162,184,0.35);
+        }
+
+        .interval-text { flex: 1; min-width: 200px; }
+
+        .interval-text .int-title {
+            font-size: 17px;
+            font-weight: 700;
+            color: #0b3c4a;
+        }
+
+        .interval-text .int-desc {
+            font-size: 13px;
+            color: #25596a;
+            margin-top: 3px;
+        }
+
+        .interval-control {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .interval-control input {
+            width: 110px;
+            padding: 10px 14px;
+            font-size: 20px;
+            font-weight: 800;
+            color: #17a2b8;
+            background: white;
+            border: 1.5px solid #17a2b8;
+            border-radius: 6px;
+            outline: none;
+            font-family: inherit;
+            text-align: center;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .interval-control input:focus {
+            box-shadow: 0 0 0 3px rgba(23,162,184,0.2);
+        }
+
+        .interval-control .unit {
+            font-size: 16px;
+            font-weight: 700;
+            color: #0b3c4a;
+        }
+
+        /* ============================================================
+           FOOTER
+        ============================================================ */
+        .app-footer {
+            min-height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            padding: 10px 24px;
+            background: white;
+            border-top: 1px solid var(--border-light);
+            color: var(--text-muted);
+            font-size: 14px;
+        }
+
+        .app-footer a { color: var(--primary); text-decoration: none; }
+
+        /* ============================================================
+           TOASTS
+        ============================================================ */
+        .toast-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 3000;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .toast {
+            background: white;
+            border-left: 4px solid var(--primary);
+            padding: 12px 18px;
+            border-radius: 4px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            font-size: 14px;
+            color: var(--text-main);
+            min-width: 240px;
+            animation: slideIn 0.25s ease;
+        }
+
+        .toast.success { border-left-color: var(--success); }
+        .toast.error { border-left-color: var(--danger); }
+        .toast.warning { border-left-color: var(--warning); }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateX(20px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        /* ============================================================
+           RESPONSIVE
+        ============================================================ */
+        @media (max-width: 1199px) {
+            .stats-grid { grid-template-columns: repeat(2, 1fr); }
+            .stats-grid.cols-3 { grid-template-columns: repeat(2, 1fr); }
+            .game-state-grid { grid-template-columns: repeat(2, 1fr); }
+            .tier-grid { grid-template-columns: repeat(3, 1fr); }
+            .commission-summary { grid-template-columns: repeat(2, 1fr); }
+        }
+
+        @media (max-width: 991px) {
+            .sidebar { transform: translateX(-100%); }
+            .sidebar.open {
+                transform: translateX(0);
+                box-shadow: 4px 0 12px rgba(0,0,0,0.2);
+            }
+            .main-wrapper { margin-left: 0; }
+            .tier-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+
+        @media (max-width: 767px) {
+            .top-navbar { padding: 0 12px; }
+            .navbar-left, .navbar-right { gap: 12px; }
+            .home-link { display: none; }
+            .user-name { display: none; }
+            .stats-grid { grid-template-columns: 1fr; }
+            .stats-grid.cols-3 { grid-template-columns: 1fr; }
+            .game-state-grid { grid-template-columns: 1fr; }
+            .form-grid { grid-template-columns: 1fr; }
+            .tier-grid { grid-template-columns: 1fr; }
+            .commission-summary { grid-template-columns: 1fr; }
+            .page-title { font-size: 22px; }
+            .jackpot-panel { flex-direction: column; align-items: stretch; }
+            .interval-panel { flex-direction: column; align-items: stretch; }
+            .toggle-row { flex-direction: column; align-items: stretch; }
+            .app-footer {
+                flex-direction: column;
+                align-items: flex-start;
+                padding: 12px;
+                font-size: 13px;
+            }
+        }
+
+        .sidebar-backdrop {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 999;
+        }
+        .sidebar-backdrop.show { display: block; }
+    </style>
+
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#0a0614">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="VIP Bingo">
+  <link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj4KICA8ZGVmcz4KICAgIDxyYWRpYWxHcmFkaWVudCBpZD0iYmciIGN4PSI1MCUiIGN5PSI0MCUiIHI9Ijc1JSI+CiAgICAgIDxzdG9wIG9mZnNldD0iMCUiIHN0b3AtY29sb3I9IiMyNDEyMzMiLz4KICAgICAgPHN0b3Agb2Zmc2V0PSIxMDAlIiBzdG9wLWNvbG9yPSIjMGEwNjE0Ii8+CiAgICA8L3JhZGlhbEdyYWRpZW50PgogICAgPGxpbmVhckdyYWRpZW50IGlkPSJnb2xkIiB4MT0iMCUiIHkxPSIwJSIgeDI9IjEwMCUiIHkyPSIxMDAlIj4KICAgICAgPHN0b3Agb2Zmc2V0PSIwJSIgc3RvcC1jb2xvcj0iI2ZmZDc2YSIvPgogICAgICA8c3RvcCBvZmZzZXQ9IjEwMCUiIHN0b3AtY29sb3I9IiNjOTkyMmMiLz4KICAgIDwvbGluZWFyR3JhZGllbnQ+CiAgICA8bGluZWFyR3JhZGllbnQgaWQ9InZpcCIgeDE9IjAlIiB5MT0iMCUiIHgyPSIxMDAlIiB5Mj0iMCUiPgogICAgICA8c3RvcCBvZmZzZXQ9IjAlIiBzdG9wLWNvbG9yPSIjZmY1ZWE4Ii8+CiAgICAgIDxzdG9wIG9mZnNldD0iNTAlIiBzdG9wLWNvbG9yPSIjZmZlMTRkIi8+CiAgICAgIDxzdG9wIG9mZnNldD0iMTAwJSIgc3RvcC1jb2xvcj0iIzRmZDRmZiIvPgogICAgPC9saW5lYXJHcmFkaWVudD4KICA8L2RlZnM+CiAgPHJlY3Qgd2lkdGg9IjUxMiIgaGVpZ2h0PSI1MTIiIHJ4PSI5NiIgZmlsbD0idXJsKCNiZykiLz4KICA8cmVjdCB4PSI0MCIgeT0iNDAiIHdpZHRoPSI0MzIiIGhlaWdodD0iNDMyIiByeD0iNTYiIGZpbGw9Im5vbmUiIHN0cm9rZT0idXJsKCNnb2xkKSIgc3Ryb2tlLXdpZHRoPSIxNCIvPgogIDx0ZXh0IHg9IjI1NiIgeT0iMjM2IiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmb250LWZhbWlseT0iQXJpYWwgQmxhY2ssIEFyaWFsLCBzYW5zLXNlcmlmIiBmb250LXdlaWdodD0iOTAwIgogICAgICAgIGZvbnQtc2l6ZT0iMTQwIiBmaWxsPSJ1cmwoI3ZpcCkiIHN0cm9rZT0iIzFhMGIyOCIgc3Ryb2tlLXdpZHRoPSI0Ij5WSVA8L3RleHQ+CiAgPHRleHQgeD0iMjU2IiB5PSIzNjAiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZvbnQtZmFtaWx5PSJHZW9yZ2lhLCAnVGltZXMgTmV3IFJvbWFuJywgc2VyaWYiIGZvbnQtc3R5bGU9Iml0YWxpYyIgZm9udC13ZWlnaHQ9IjcwMCIKICAgICAgICBmb250LXNpemU9Ijk2IiBmaWxsPSIjZmYzYjVjIiBzdHJva2U9IiMxYTBiMjgiIHN0cm9rZS13aWR0aD0iMyI+QmluZ288L3RleHQ+CiAgPGNpcmNsZSBjeD0iMTEwIiBjeT0iMzAwIiByPSIzNCIgZmlsbD0iIzE3YzdmZiIvPgogIDx0ZXh0IHg9IjExMCIgeT0iMzExIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmb250LWZhbWlseT0iQXJpYWwsIHNhbnMtc2VyaWYiIGZvbnQtd2VpZ2h0PSI3MDAiIGZvbnQtc2l6ZT0iMzAiIGZpbGw9IiMwYTA2MTQiPjc8L3RleHQ+CiAgPGNpcmNsZSBjeD0iNDAyIiBjeT0iMzAwIiByPSIzNCIgZmlsbD0iI2ZmMmVjNCIvPgogIDx0ZXh0IHg9IjQwMiIgeT0iMzExIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmb250LWZhbWlseT0iQXJpYWwsIHNhbnMtc2VyaWYiIGZvbnQtd2VpZ2h0PSI3MDAiIGZvbnQtc2l6ZT0iMjgiIGZpbGw9IiMwYTA2MTQiPjg4PC90ZXh0Pgo8L3N2Zz4K">
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js', { scope: '/' }).catch(() => {});
+      });
+    }
+  </script>
+</head>
+<body>
+
+<!-- ============================================================
+     SIDEBAR
+============================================================ -->
+<aside class="sidebar" id="sidebar">
+    <div class="brand">
+        <div class="brand-logo">A</div>
+        <span>Vip Bingo</span>
+    </div>
+
+    <nav class="sidebar-nav">
+        <div class="nav-section-label">Main Menu</div>
+
+        <a href="/menu.html" class="nav-item">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 14a2 2 0 1 0 0-4 2 2 0 0 0 0 4z"></path>
+                <path d="M12 2v2"></path>
+                <path d="m4.93 4.93 1.41 1.41"></path>
+                <path d="M2 12h2"></path>
+                <path d="m4.93 19.07 1.41-1.41"></path>
+                <path d="M12 20v2"></path>
+                <path d="m19.07 19.07-1.41-1.41"></path>
+                <path d="M22 12h-2"></path>
+                <path d="m19.07 4.93-1.41 1.41"></path>
+            </svg>
+            <span>Dashboard</span>
+        </a>
+
+        <a href="/register.html" class="nav-item">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z"></path>
+            </svg>
+            <span>Register Tickets</span>
+        </a>
+
+        <a href="/game.html" class="nav-item">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+                <polygon points="5 3 19 12 5 21 5 3"></polygon>
+            </svg>
+            <span>Play Game</span>
+        </a>
+
+        <a href="/admin.html" class="nav-item active">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+            </svg>
+            <span>Admin Panel</span>
+        </a>
+
+        <a href="/index.html" class="nav-item">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M3 3v18h18"></path>
+                <path d="M18 17V9"></path>
+                <path d="M13 17V5"></path>
+                <path d="M8 17v-3"></path>
+            </svg>
+            <span>Reports</span>
+        </a>
+
+        <a href="/settings.html" class="nav-item">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="3"></circle>
+                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+            </svg>
+            <span>Settings</span>
+        </a>
+
+        <button type="button" class="nav-item" onclick="logout()" style="margin-top: 8px;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                <polyline points="16 17 21 12 16 7"></polyline>
+                <line x1="21" y1="12" x2="9" y2="12"></line>
+            </svg>
+            <span>Logout</span>
+        </button>
+    </nav>
+</aside>
+
+<div class="sidebar-backdrop" id="sidebarBackdrop" onclick="toggleSidebar()"></div>
+
+<!-- ============================================================
+     MAIN WRAPPER
+============================================================ -->
+<div class="main-wrapper">
+
+    <header class="top-navbar">
+        <div class="navbar-left">
+            <button class="icon-btn" onclick="toggleSidebar()" aria-label="Toggle sidebar">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="3" y1="6" x2="21" y2="6"></line>
+                    <line x1="3" y1="12" x2="21" y2="12"></line>
+                    <line x1="3" y1="18" x2="21" y2="18"></line>
+                </svg>
+            </button>
+            <a href="/menu.html" class="home-link">Home</a>
+            <button class="language-button" onclick="cycleLanguage()" id="langBtn">ENG</button>
+        </div>
+
+        <div class="navbar-right">
+            <button class="icon-btn" onclick="refreshData()" aria-label="Refresh">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 12a9 9 0 1 1-2.64-6.36"></path>
+                    <polyline points="21 3 21 9 15 9"></polyline>
+                </svg>
+            </button>
+            <button class="icon-btn" onclick="toggleFullscreen()" aria-label="Fullscreen">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M8 3H5a2 2 0 0 0-2 2v3"></path>
+                    <path d="M21 8V5a2 2 0 0 0-2-2h-3"></path>
+                    <path d="M3 16v3a2 2 0 0 0 2 2h3"></path>
+                    <path d="M16 21h3a2 2 0 0 0 2-2v-3"></path>
+                </svg>
+            </button>
+
+            <div class="user-chip">
+                <div class="user-avatar" id="userAvatar">?</div>
+                <span class="user-name" id="userName">Admin</span>
+            </div>
+        </div>
+    </header>
+
+    <main class="main-content">
+        <div class="content-inner">
+
+            <h1 class="page-title">Admin Control Panel</h1>
+            <div class="breadcrumb">
+                <a href="/menu.html">Home</a>
+                <span class="sep">/</span>
+                <span>Admin</span>
+            </div>
+
+            <!-- ============================================================
+                 CALLING INTERVAL (NEW)
+            ============================================================ -->
+            <div class="card">
+                <div class="card-header">
+                    <h2>⏱️ Calling Interval</h2>
+                    <span class="badge info" id="intervalBadge">— sec</span>
+                </div>
+                <div class="card-body">
+
+                    <div class="interval-panel">
+                        <div class="interval-icon">⏱️</div>
+                        <div class="interval-text">
+                            <div class="int-title">Number Calling Speed</div>
+                            <div class="int-desc">
+                                How many seconds the game waits between each called number.
+                                The change takes effect on the next game start or when you press Save.
+                            </div>
+                        </div>
+
+                        <div class="interval-control">
+                            <input type="number" id="drawIntervalSeconds" min="1" max="60" step="1" value="4">
+                            <span class="unit">sec</span>
+                        </div>
+                    </div>
+
+                    <div class="btn-row" style="margin-top: 18px;">
+                        <button class="btn btn-primary" onclick="saveCallingInterval()">💾 Save Interval</button>
+                        <button class="btn btn-outline" onclick="loadCallingInterval()">↺ Refresh</button>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- ============================================================
+                 WALLET MANAGEMENT
+            ============================================================ -->
+            <div class="card">
+                <div class="card-header">
+                    <h2>💰 Wallet Management</h2>
+                    <span class="badge info">Manual Replenishment</span>
+                </div>
+                <div class="card-body">
+
+                    <div class="wallet-balance-display">
+                        <div class="label">Current Wallet Balance</div>
+                        <div class="balance" id="walletBalance">0.00 Br</div>
+                        <div class="meta">Last updated: <span id="walletLastUpdated">—</span></div>
+                    </div>
+
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label>Amount (Br)</label>
+                            <input type="number" id="walletAmount" placeholder="Enter amount" step="0.01" min="0">
+                        </div>
+                        <div class="form-group">
+                            <label>Reason / Notes</label>
+                            <input type="text" id="walletReason" placeholder="Reason for transaction">
+                        </div>
+                    </div>
+
+                    <div class="btn-row" style="margin-bottom: 20px;">
+                        <button class="btn btn-success" onclick="creditWallet()">
+                            ➕ Credit Wallet
+                        </button>
+                        <button class="btn btn-warning" onclick="debitWallet()">
+                            ➖ Debit Wallet
+                        </button>
+                    </div>
+
+                    <h3 style="font-size: 15px; font-weight: 600; margin-bottom: 12px; color: var(--text-main);">Recent Transactions</h3>
+                    <div class="table-container" style="max-height: 300px;">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Type</th>
+                                    <th>Amount</th>
+                                    <th>Balance After</th>
+                                    <th>Reason</th>
+                                </tr>
+                            </thead>
+                            <tbody id="walletTransactionsTable">
+                                <tr><td colspan="5" style="text-align: center;">Loading…</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ============================================================
+                 STATS
+            ============================================================ -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-icon blue">🎮</div>
+                    <div class="stat-body">
+                        <div class="stat-title">Total Games</div>
+                        <div class="stat-value" id="totalGames">0</div>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon green">🎫</div>
+                    <div class="stat-body">
+                        <div class="stat-title">Tickets Sold</div>
+                        <div class="stat-value" id="ticketsSold">0</div>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon orange">💰</div>
+                    <div class="stat-body">
+                        <div class="stat-title">House Balance</div>
+                        <div class="stat-value" id="houseBalance">0 Br</div>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon purple">🏆</div>
+                    <div class="stat-body">
+                        <div class="stat-title">Total Winners</div>
+                        <div class="stat-value" id="totalWinners">0</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ============================================================
+                 JACKPOT CONTROL
+            ============================================================ -->
+            <div class="card">
+                <div class="card-header">
+                    <h2>🎰 Jackpot Control</h2>
+                    <span class="badge" id="jackpotHeaderBadge">OFF</span>
+                </div>
+                <div class="card-body">
+
+                    <div class="jackpot-panel" id="jackpotPanel">
+                        <div class="jackpot-info">
+                            <div class="jackpot-icon">🎰</div>
+                            <div class="jackpot-text">
+                                <div class="jp-title">
+                                    Jackpot Feature
+                                    <span class="jackpot-status-label off" id="jackpotStatusLabel">OFF</span>
+                                </div>
+                                <div class="jp-desc" id="jackpotDesc">
+                                    When enabled, 10% of each game's sales is added to the jackpot pool.
+                                    After 6 games the next game becomes a JACKPOT GAME and its winner takes the pool.
+                                </div>
+                            </div>
+                        </div>
+
+                        <div style="display: flex; align-items: center; gap: 14px; flex-wrap: wrap;">
+                            <div style="text-align: right;">
+                                <div style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; color: #7a5c1e; font-weight: 700;">Current Jackpot</div>
+                                <div style="font-size: 24px; font-weight: 800; color: #4a2800; font-variant-numeric: tabular-nums;" id="jackpotAmountDisplay">0.00 Br</div>
+                            </div>
+                            <label class="toggle-switch" title="Toggle jackpot on/off">
+                                <input type="checkbox" id="jackpotToggle" onchange="toggleJackpot(this.checked)">
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="progress-wrap">
+                        <div class="progress-header">
+                            <span class="label">Progress to Jackpot Game</span>
+                            <span class="value" id="jackpotProgressText">0 / 6 games</span>
+                        </div>
+                        <div class="progress-bar">
+                            <div class="progress-bar-fill" id="jackpotProgressBar"></div>
+                        </div>
+                        <div class="armed-badge" id="jackpotArmedBadge">
+                            🔥 NEXT GAME IS A JACKPOT GAME 🔥
+                        </div>
+                    </div>
+
+                    <div class="form-grid" style="margin-top: 20px;">
+                        <div class="form-group">
+                            <label for="jackpotContributionPct">Contribution % of Sales</label>
+                            <input type="number" id="jackpotContributionPct" min="1" max="100" step="0.5" value="10">
+                            <div class="form-hint">Percentage of each game's sales added to the jackpot pool</div>
+                        </div>
+                        <div class="form-group">
+                            <label for="jackpotGamesRequired">Games Required to Arm</label>
+                            <input type="number" id="jackpotGamesRequired" min="1" max="100" step="1" value="6">
+                            <div class="form-hint">After this many games, the next one becomes a jackpot game</div>
+                        </div>
+                    </div>
+
+                    <div class="btn-row" style="margin-top: 8px;">
+                        <button class="btn btn-primary" onclick="saveJackpotConfig()">💾 Save Config</button>
+                        <button class="btn btn-outline" onclick="loadJackpotStatus()">↺ Refresh</button>
+                        <button class="btn btn-outline" id="jackpotResetBtn" onclick="resetJackpotPool()">🔄 Reset Jackpot</button>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- ============================================================
+                 COMMISSION TIER
+            ============================================================ -->
+            <div class="card">
+                <div class="card-header">
+                    <h2>💼 Commission Tier</h2>
+                    <span class="badge warning" id="commissionModeBadge">AUTO</span>
+                </div>
+                <div class="card-body">
+
+                    <p style="font-size: 14px; color: var(--text-muted); margin-bottom: 16px;">
+                        <strong>Automatic:</strong> tier is chosen from the game sales amount.<br>
+                        <strong>Manual:</strong> you pick a specific tier — overrides automatic until you switch back.<br>
+                        <strong>✏️ Edit rates:</strong> click the <strong>✏️</strong> button next to any tier's percentage to change its commission rate.
+                    </p>
+
+                    <div class="toggle-row">
+                        <div class="toggle-info">
+                            <div class="toggle-title">🔧 Manual Override</div>
+                            <div class="toggle-desc">When ON, your selected tier is used instead of the automatic one</div>
+                        </div>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="commissionManualToggle" onchange="toggleCommissionMode(this.checked)">
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+
+                    <div class="tier-grid" id="tierGrid">
+                        <div class="tier-card" data-tier="0" data-min="0" data-max="499" data-rate="10" onclick="selectTier(this)">
+                            <div class="tier-name">Tier 0</div>
+                            <div class="tier-rate-wrap">
+                                <span class="tier-rate" data-tier-rate>10%</span>
+                                <button type="button" class="tier-rate-edit-btn" onclick="event.stopPropagation(); startEditTierRate(this)" title="Edit rate">✏️</button>
+                            </div>
+                            <div class="tier-range">0 – 499 Br</div>
+                            <div class="tier-desc">Minimum bracket</div>
+                        </div>
+
+                        <div class="tier-card" data-tier="1" data-min="500" data-max="1000" data-rate="15" onclick="selectTier(this)">
+                            <div class="tier-name">Tier 1</div>
+                            <div class="tier-rate-wrap">
+                                <span class="tier-rate" data-tier-rate>15%</span>
+                                <button type="button" class="tier-rate-edit-btn" onclick="event.stopPropagation(); startEditTierRate(this)" title="Edit rate">✏️</button>
+                            </div>
+                            <div class="tier-range">500 – 1,000 Br</div>
+                            <div class="tier-desc">Entry-level sales</div>
+                        </div>
+
+                        <div class="tier-card" data-tier="2" data-min="1100" data-max="1500" data-rate="30" onclick="selectTier(this)">
+                            <div class="tier-name">Tier 2</div>
+                            <div class="tier-rate-wrap">
+                                <span class="tier-rate" data-tier-rate>30%</span>
+                                <button type="button" class="tier-rate-edit-btn" onclick="event.stopPropagation(); startEditTierRate(this)" title="Edit rate">✏️</button>
+                            </div>
+                            <div class="tier-range">1,100 – 1,500 Br</div>
+                            <div class="tier-desc">Growing sales</div>
+                        </div>
+
+                        <div class="tier-card" data-tier="3" data-min="1600" data-max="3000" data-rate="35" onclick="selectTier(this)">
+                            <div class="tier-name">Tier 3</div>
+                            <div class="tier-rate-wrap">
+                                <span class="tier-rate" data-tier-rate>35%</span>
+                                <button type="button" class="tier-rate-edit-btn" onclick="event.stopPropagation(); startEditTierRate(this)" title="Edit rate">✏️</button>
+                            </div>
+                            <div class="tier-range">1,600 – 3,000 Br</div>
+                            <div class="tier-desc">Established sales</div>
+                        </div>
+
+                        <div class="tier-card" data-tier="4" data-min="3100" data-max="6000" data-rate="40" onclick="selectTier(this)">
+                            <div class="tier-name">Tier 4</div>
+                            <div class="tier-rate-wrap">
+                                <span class="tier-rate" data-tier-rate>40%</span>
+                                <button type="button" class="tier-rate-edit-btn" onclick="event.stopPropagation(); startEditTierRate(this)" title="Edit rate">✏️</button>
+                            </div>
+                            <div class="tier-range">3,100 – 6,000 Br</div>
+                            <div class="tier-desc">Premium sales</div>
+                        </div>
+                    </div>
+
+                    <div class="commission-summary">
+                        <div class="summary-item">
+                            <div class="label">Active Tier</div>
+                            <div class="value blue" id="selectedTierLabel">—</div>
+                        </div>
+                        <div class="summary-item">
+                            <div class="label">Active Rate</div>
+                            <div class="value orange" id="selectedTierRate">—</div>
+                        </div>
+                        <div class="summary-item">
+                            <div class="label">Source</div>
+                            <div class="value" id="selectedTierSource">—</div>
+                        </div>
+                    </div>
+
+                    <div class="btn-row" style="margin-top: 18px;">
+                        <button class="btn btn-primary" onclick="saveCommissionTier()">💾 Save</button>
+                        <button class="btn btn-outline" onclick="loadCommissionTier()">↺ Refresh</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ============================================================
+                 GAME STATE
+            ============================================================ -->
+            <div class="card">
+                <div class="card-header">
+                    <h2>🎮 Current Game State</h2>
+                    <span class="badge info" id="gameStatus">Loading…</span>
+                </div>
+                <div class="card-body">
+                    <div class="game-state-grid">
+                        <div class="game-state-item">
+                            <div class="label">Game ID</div>
+                            <div class="value" id="gameId">None</div>
+                        </div>
+                        <div class="game-state-item">
+                            <div class="label">Started</div>
+                            <div class="value" id="gameStarted">No</div>
+                        </div>
+                        <div class="game-state-item">
+                            <div class="label">Paused</div>
+                            <div class="value" id="gamePaused">No</div>
+                        </div>
+                        <div class="game-state-item">
+                            <div class="label">Numbers Left</div>
+                            <div class="value" id="numbersLeft">75</div>
+                        </div>
+                    </div>
+
+                    <div class="last-called-wrap">
+                        <div class="label">Last Called Numbers</div>
+                        <div id="lastCalledNumbers" style="color: #6c757d;">No numbers called yet</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ============================================================
+                 GAME MANAGEMENT
+            ============================================================ -->
+            <div class="card">
+                <div class="card-header">
+                    <h2>🎮 Game Management</h2>
+                    <span class="badge info" id="stuckGamesCount">0 stuck</span>
+                </div>
+                <div class="card-body">
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Game Number</th>
+                                    <th>Status</th>
+                                    <th>Tickets</th>
+                                    <th>Sales</th>
+                                    <th>Last Draw</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="gamesTableBody">
+                                <tr><td colspan="7" style="text-align: center;">Loading…</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="btn-row" style="margin-top: 20px;">
+                        <button class="btn btn-outline" onclick="refreshGames()">🔄 Refresh Games</button>
+                        <button class="btn btn-danger" onclick="checkStuckGames()">⚠️ Check Stuck Games</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ============================================================
+                 ACTION BUTTONS
+            ============================================================ -->
+            <div class="btn-row">
+                <button class="btn btn-primary" onclick="refreshData()">🔄 Refresh All Data</button>
+                <button class="btn btn-success" onclick="viewSettings()">⚙️ Game Settings</button>
+                <button class="btn btn-danger" onclick="emergencyStop()">⛔ Emergency Stop</button>
+            </div>
+
+        </div>
+    </main>
+
+    <footer class="app-footer">
+        <span>Copyright © 2026, <a href="#">Colink Software Development PLC</a>. All rights reserved.</span>
+        <span>Version 1.0.0</span>
+    </footer>
+</div>
+
+<div class="toast-container" id="toastContainer"></div>
+
+<script>
+    /* ============================================================
+       STATE
+    ============================================================ */
+    let currentUser = null;
+    let cache = { walletBalance: null, houseBalance: 0 };
+    let isLoading = false;
+    let refreshTimer = null;
+    const LANGUAGES = ['ENG', 'AMH', 'ORM'];
+    let currentLangIndex = 0;
+
+    // Jackpot state
+    let jackpotEnabled = false;
+    let jackpotAmount = 0;
+    let jackpotArmed = false;
+    let jackpotCounter = 0;
+    let jackpotRequired = 6;
+    let jackpotContributionPct = 10;
+
+    // Commission tier state
+    let selectedTier = null;
+    let commissionMode = 'auto';
+    let activeAutoTier = null;
+
+    /* ============================================================
+       TOAST
+    ============================================================ */
+    function showMessage(text, type = 'info') {
+        const container = document.getElementById('toastContainer');
+        const toast = document.createElement('div');
+        toast.className = `toast ${type}`;
+        toast.textContent = text;
+        container.appendChild(toast);
+        setTimeout(() => {
+            toast.style.opacity = '0';
+            toast.style.transition = 'opacity 0.3s';
+            setTimeout(() => toast.remove(), 300);
+        }, 2600);
+    }
+
+    /* ============================================================
+       SIDEBAR / UI HELPERS
+    ============================================================ */
+    function toggleSidebar() {
+        document.getElementById('sidebar').classList.toggle('open');
+        document.getElementById('sidebarBackdrop').classList.toggle('show');
+    }
+
+    function toggleFullscreen() {
+        if (!document.fullscreenElement) document.documentElement.requestFullscreen().catch(() => {});
+        else document.exitFullscreen();
+    }
+
+    function cycleLanguage() {
+        currentLangIndex = (currentLangIndex + 1) % LANGUAGES.length;
+        document.getElementById('langBtn').textContent = LANGUAGES[currentLangIndex];
+        showMessage(`Language: ${LANGUAGES[currentLangIndex]}`, 'info');
+    }
+
+    /* ============================================================
+       SESSION GUARD
+    ============================================================ */
+    async function verifySession() {
+        try {
+            const me = await window.api.me();
+            if (!me?.success || !me.user) {
+                window.location.href = '/login.html';
+                return false;
+            }
+            if (me.user.role !== 'admin') {
+                window.location.href = '/menu.html';
+                return false;
+            }
+            currentUser = me.user;
+            document.getElementById('userName').textContent = currentUser.full_name || currentUser.username || 'Admin';
+            document.getElementById('userAvatar').textContent = (currentUser.username || 'A')[0].toUpperCase();
+            return true;
+        } catch (e) {
+            window.location.href = '/login.html';
+            return false;
+        }
+    }
+
+    /* ============================================================
+       LOGOUT
+    ============================================================ */
+    async function logout() {
+        if (!confirm('Log out of Vip Bingo?')) return;
+        if (refreshTimer) clearInterval(refreshTimer);
+        try { await window.api.logout(); } catch {}
+        window.location.href = '/login.html';
+    }
+
+    /* ============================================================
+       CALLING INTERVAL  (NEW)
+       Reads / writes settings.draw_interval (stored in ms by the
+       backend; we show it as seconds).
+    ============================================================ */
+    async function loadCallingInterval() {
+        try {
+            const s = await window.api.getSettings();
+            const ms = Number(s?.draw_interval) || 4000;
+            const sec = Math.max(1, Math.round(ms / 1000));
+
+            const input = document.getElementById('drawIntervalSeconds');
+            if (document.activeElement !== input) {
+                input.value = sec;
+            }
+
+            document.getElementById('intervalBadge').textContent = `${sec} sec`;
+        } catch (e) {
+            console.error('Load calling interval error:', e);
+        }
+    }
+
+    async function saveCallingInterval() {
+        const input = document.getElementById('drawIntervalSeconds');
+        const sec = parseFloat(input.value);
+
+        if (!Number.isFinite(sec) || sec < 1 || sec > 60) {
+            return showMessage('Interval must be between 1 and 60 seconds', 'warning');
+        }
+
+        try {
+            const result = await window.api.updateSettings({ draw_interval: Math.round(sec * 1000) });
+            if (result?.success !== false) {
+                document.getElementById('intervalBadge').textContent = `${Math.round(sec)} sec`;
+                showMessage(`✅ Calling interval set to ${Math.round(sec)} sec`, 'success');
+                // Reload from server to confirm
+                await loadCallingInterval();
+            } else {
+                showMessage(`Failed: ${result?.error || 'Unknown'}`, 'error');
+            }
+        } catch (e) {
+            showMessage('Error: ' + e.message, 'error');
+        }
+    }
+
+    /* ============================================================
+       WALLET
+    ============================================================ */
+    async function loadWalletData() {
+        try {
+            const balance = await window.api.getWalletBalance();
+            let bal = 0;
+            if (typeof balance === 'number') bal = balance;
+            else if (balance?.success && typeof balance.balance === 'number') bal = balance.balance;
+            else if (typeof balance?.balance === 'number') bal = balance.balance;
+
+            cache.walletBalance = bal;
+            document.getElementById('walletBalance').textContent = `${bal.toFixed(2)} Br`;
+            document.getElementById('walletLastUpdated').textContent = new Date().toLocaleTimeString();
+
+            const txns = await window.api.getWalletTransactions(20, 0, null);
+            let transactions = [];
+            if (Array.isArray(txns)) transactions = txns;
+            else if (txns?.success && Array.isArray(txns.transactions)) transactions = txns.transactions;
+            else if (txns?.transactions) transactions = txns.transactions;
+
+            const tbody = document.getElementById('walletTransactionsTable');
+            if (!transactions.length) {
+                tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">No transactions</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = transactions.slice(0, 20).map(tx => {
+                let typeIcon = '💰', typeText = tx.transaction_type || 'Unknown', color = '#dc3545';
+                if (typeText === 'deposit') { typeIcon = '💰'; typeText = 'Deposit'; color = '#28a745'; }
+                else if (typeText === 'withdrawal') { typeIcon = '💸'; typeText = 'Withdrawal'; color = '#dc3545'; }
+                else if (typeText === 'game_purchase') { typeIcon = '🎮'; typeText = 'Game Purchase'; color = '#dc3545'; }
+                else if (typeText === 'prize_payout') { typeIcon = '🏆'; typeText = 'Prize Payout'; color = '#28a745'; }
+                else if (typeText === 'commission') { typeIcon = '💼'; typeText = 'Commission'; color = '#007bff'; }
+
+                return `<tr>
+                    <td>${tx.created_at ? new Date(tx.created_at).toLocaleString() : '-'}</td>
+                    <td>${typeIcon} ${typeText}</td>
+                    <td style="color:${color}; font-weight: 600;">${Math.abs(tx.amount).toFixed(2)} Br</td>
+                    <td>${(tx.balance_after || 0).toFixed(2)} Br</td>
+                    <td>${tx.description || tx.notes || '-'}</td>
+                </tr>`;
+            }).join('');
+        } catch (e) {
+            console.error('Wallet error:', e);
+        }
+    }
+
+    async function creditWallet() {
+        const amount = parseFloat(document.getElementById('walletAmount').value);
+        const reason = document.getElementById('walletReason').value || 'Admin credit';
+        if (isNaN(amount) || amount <= 0) return showMessage('Enter valid amount', 'warning');
+        try {
+            const result = await window.api.creditWallet(amount, reason, 'admin');
+            if (result?.success) {
+                showMessage(`✅ Credited ${amount.toFixed(2)} Br`, 'success');
+                document.getElementById('walletAmount').value = '';
+                document.getElementById('walletReason').value = '';
+                await loadWalletData();
+                await loadGameStats();
+            } else {
+                showMessage(`Failed: ${result?.error || 'Unknown'}`, 'error');
+            }
+        } catch (e) {
+            showMessage('Error: ' + e.message, 'error');
+        }
+    }
+
+    async function debitWallet() {
+        const amount = parseFloat(document.getElementById('walletAmount').value);
+        const reason = document.getElementById('walletReason').value || 'Admin debit';
+        if (isNaN(amount) || amount <= 0) return showMessage('Enter valid amount', 'warning');
+
+        let balance = cache.walletBalance;
+        if (balance == null) {
+            const b = await window.api.getWalletBalance();
+            balance = typeof b === 'number' ? b : b?.balance || 0;
+        }
+        if (balance < amount) {
+            return showMessage(`Insufficient: ${balance.toFixed(2)} Br`, 'error');
+        }
+        if (!confirm(`Debit ${amount.toFixed(2)} Br?`)) return;
+
+        try {
+            const result = await window.api.debitWallet(amount, reason, 'admin');
+            if (result?.success) {
+                showMessage(`✅ Debited ${amount.toFixed(2)} Br`, 'success');
+                document.getElementById('walletAmount').value = '';
+                document.getElementById('walletReason').value = '';
+                await loadWalletData();
+                await loadGameStats();
+            } else {
+                showMessage(`Failed: ${result?.error || 'Unknown'}`, 'error');
+            }
+        } catch (e) {
+            showMessage('Error: ' + e.message, 'error');
+        }
+    }
+
+    /* ============================================================
+       STATS
+    ============================================================ */
+    async function loadGameStats() {
+        try {
+            const stats = await window.api.getSummaryStats();
+            const data = stats?.success ? stats.stats : stats;
+            if (data) {
+                document.getElementById('totalGames').textContent = data.total_games || 0;
+                document.getElementById('ticketsSold').textContent = data.total_tickets_sold || 0;
+                document.getElementById('houseBalance').textContent = `${(data.current_house_balance || 0).toFixed(2)} Br`;
+                document.getElementById('totalWinners').textContent = data.total_winners || 0;
+                cache.houseBalance = data.current_house_balance || 0;
+
+                if (data.commission) {
+                    commissionMode = data.commission.mode || 'auto';
+                    activeAutoTier = {
+                        tier: data.commission.autoTier,
+                        rate: data.commission.autoRate
+                    };
+                    updateCommissionUI();
+                }
+            }
+        } catch (e) {
+            console.error('Stats error:', e);
+        }
+    }
+
+    /* ============================================================
+       JACKPOT
+    ============================================================ */
+    async function loadJackpotStatus() {
+        try {
+            const jp = await window.api.getJackpotStatus?.();
+            if (jp) {
+                jackpotEnabled = jp.enabled === true;
+                jackpotAmount = jp.amount ?? 0;
+                jackpotArmed = jp.armed === true;
+                jackpotCounter = jp.gamesCounter ?? 0;
+                jackpotRequired = jp.gamesRequired ?? 6;
+                jackpotContributionPct = jp.contributionPct ?? 10;
+
+                const pctInput = document.getElementById('jackpotContributionPct');
+                const reqInput = document.getElementById('jackpotGamesRequired');
+                if (document.activeElement !== pctInput) pctInput.value = jackpotContributionPct;
+                if (document.activeElement !== reqInput) reqInput.value = jackpotRequired;
+            }
+            renderJackpot();
+        } catch (e) {
+            console.error('Jackpot status error:', e);
+            renderJackpot();
+        }
+    }
+
+    function renderJackpot() {
+        const toggle = document.getElementById('jackpotToggle');
+        const panel = document.getElementById('jackpotPanel');
+        const statusLabel = document.getElementById('jackpotStatusLabel');
+        const headerBadge = document.getElementById('jackpotHeaderBadge');
+        const amountEl = document.getElementById('jackpotAmountDisplay');
+        const descEl = document.getElementById('jackpotDesc');
+        const progressText = document.getElementById('jackpotProgressText');
+        const progressBar = document.getElementById('jackpotProgressBar');
+        const armedBadge = document.getElementById('jackpotArmedBadge');
+
+        toggle.checked = jackpotEnabled;
+
+        if (jackpotEnabled) {
+            panel.classList.add('is-on');
+            statusLabel.textContent = 'ON';
+            statusLabel.className = 'jackpot-status-label on';
+            headerBadge.textContent = 'ON';
+            headerBadge.className = 'badge success';
+            descEl.textContent = `${jackpotContributionPct}% of each game's sales is added to the pool. After ${jackpotRequired} games the next one is a JACKPOT GAME.`;
+        } else {
+            panel.classList.remove('is-on');
+            statusLabel.textContent = 'OFF';
+            statusLabel.className = 'jackpot-status-label off';
+            headerBadge.textContent = 'OFF';
+            headerBadge.className = 'badge';
+            descEl.textContent = 'When enabled, 10% of each game\'s sales is added to the jackpot pool.';
+        }
+
+        amountEl.textContent = `${(jackpotAmount || 0).toFixed(2)} Br`;
+
+        const required = jackpotRequired || 6;
+        const counter = jackpotCounter || 0;
+        const pct = Math.min(100, Math.round((counter / required) * 100));
+        progressBar.style.width = pct + '%';
+        progressText.textContent = `${counter} / ${required} games`;
+
+        if (jackpotArmed) {
+            progressBar.classList.add('armed');
+            armedBadge.classList.add('show');
+        } else {
+            progressBar.classList.remove('armed');
+            armedBadge.classList.remove('show');
+        }
+    }
+
+    async function toggleJackpot(enabled) {
+        const toggle = document.getElementById('jackpotToggle');
+        toggle.disabled = true;
+        try {
+            const result = await window.api.setJackpotStatus?.(enabled);
+            if (result?.success !== false) {
+                jackpotEnabled = result.enabled ?? enabled;
+                jackpotAmount = result.amount ?? jackpotAmount;
+                jackpotArmed = result.armed ?? jackpotArmed;
+                jackpotCounter = result.gamesCounter ?? jackpotCounter;
+                jackpotRequired = result.gamesRequired ?? jackpotRequired;
+                jackpotContributionPct = result.contributionPct ?? jackpotContributionPct;
+                renderJackpot();
+                showMessage(`Jackpot ${jackpotEnabled ? 'ENABLED' : 'DISABLED'}`, jackpotEnabled ? 'success' : 'warning');
+            } else {
+                showMessage(`Failed: ${result?.error || 'Unknown'}`, 'error');
+                toggle.checked = jackpotEnabled;
+            }
+        } catch (e) {
+            showMessage('Error: ' + e.message, 'error');
+            toggle.checked = jackpotEnabled;
+        } finally {
+            toggle.disabled = false;
+        }
+    }
+
+    // Two clicks to confirm (no browser pop-up): first click arms the button for 5 seconds
+    let jackpotResetTimer = null;
+    async function resetJackpotPool() {
+        const btn = document.getElementById('jackpotResetBtn');
+        if (!jackpotResetTimer) {
+            btn.textContent = '⚠️ Click again to confirm';
+            jackpotResetTimer = setTimeout(() => {
+                jackpotResetTimer = null;
+                btn.textContent = '🔄 Reset Jackpot';
+            }, 5000);
+            return showMessage(`This clears the ${Number(jackpotAmount).toFixed(2)} Br pool and restarts the game count from 0. Click Reset again to confirm.`, 'warning');
+        }
+        clearTimeout(jackpotResetTimer);
+        jackpotResetTimer = null;
+        btn.disabled = true;
+        try {
+            const result = await window.api.resetJackpot();
+            if (result?.success) {
+                await loadJackpotStatus();
+                showMessage('✅ Jackpot restarted — collecting from the beginning', 'success');
+            } else {
+                showMessage(`Failed: ${result?.error || 'Unknown'}`, 'error');
+            }
+        } catch (e) {
+            showMessage('Error: ' + e.message, 'error');
+        } finally {
+            btn.disabled = false;
+            btn.textContent = '🔄 Reset Jackpot';
+        }
+    }
+
+    async function saveJackpotConfig() {
+        const contributionPct = parseFloat(document.getElementById('jackpotContributionPct').value);
+        const gamesRequired = parseInt(document.getElementById('jackpotGamesRequired').value, 10);
+
+        if (!Number.isFinite(contributionPct) || contributionPct <= 0 || contributionPct > 100) {
+            return showMessage('Contribution % must be between 1 and 100', 'warning');
+        }
+        if (!Number.isFinite(gamesRequired) || gamesRequired < 1) {
+            return showMessage('Games required must be at least 1', 'warning');
+        }
+
+        try {
+            const result = await window.api.setJackpotConfig?.({
+                contributionPct,
+                gamesRequired
+            });
+            if (result?.success !== false) {
+                showMessage('✅ Jackpot config saved', 'success');
+                jackpotContributionPct = result.contributionPct ?? contributionPct;
+                jackpotRequired = result.gamesRequired ?? gamesRequired;
+                renderJackpot();
+            } else {
+                showMessage(`Failed: ${result?.error || 'Unknown'}`, 'error');
+            }
+        } catch (e) {
+            showMessage('Error: ' + e.message, 'error');
+        }
+    }
+
+    /* ============================================================
+       COMMISSION TIER
+    ============================================================ */
+
+    function selectTier(card) {
+        document.querySelectorAll('.tier-card').forEach(c => {
+            c.classList.remove('selected', 'active-auto');
+        });
+        card.classList.add('selected');
+
+        const rateEl = card.querySelector('[data-tier-rate]');
+        const currentRate = rateEl
+            ? parseFloat(String(rateEl.textContent).replace('%', '').trim())
+            : parseFloat(card.dataset.rate);
+
+        card.dataset.rate = currentRate;
+
+        selectedTier = {
+            tier: parseInt(card.dataset.tier, 10),
+            min: parseFloat(card.dataset.min),
+            max: parseFloat(card.dataset.max),
+            rate: currentRate
+        };
+
+        updateCommissionUI();
+    }
+
+    function updateCommissionUI() {
+        const modeBadge = document.getElementById('commissionModeBadge');
+        const manualToggle = document.getElementById('commissionManualToggle');
+        const label = document.getElementById('selectedTierLabel');
+        const rate = document.getElementById('selectedTierRate');
+        const source = document.getElementById('selectedTierSource');
+
+        manualToggle.checked = (commissionMode === 'manual');
+        modeBadge.textContent = commissionMode.toUpperCase();
+        modeBadge.className = commissionMode === 'manual' ? 'badge warning' : 'badge success';
+
+        document.querySelectorAll('.tier-card').forEach(c => {
+            c.classList.remove('active-auto');
+        });
+        if (commissionMode === 'auto' && activeAutoTier?.tier != null) {
+            const autoCard = document.querySelector(`.tier-card[data-tier="${activeAutoTier.tier}"]`);
+            if (autoCard) autoCard.classList.add('active-auto');
+        }
+
+        if (commissionMode === 'manual' && selectedTier) {
+            label.textContent = `Tier ${selectedTier.tier}`;
+            rate.textContent = `${selectedTier.rate}%`;
+            source.textContent = 'Manual override';
+            source.className = 'value orange';
+        } else if (commissionMode === 'auto' && activeAutoTier?.tier != null) {
+            label.textContent = `Tier ${activeAutoTier.tier} (auto)`;
+            rate.textContent = `${activeAutoTier.rate}%`;
+            source.textContent = 'Automatic';
+            source.className = 'value green';
+        } else if (selectedTier) {
+            label.textContent = `Tier ${selectedTier.tier} (pending)`;
+            rate.textContent = `${selectedTier.rate}%`;
+            source.textContent = 'Click Save to apply';
+            source.className = 'value';
+        } else {
+            label.textContent = '—';
+            rate.textContent = '—';
+            source.textContent = commissionMode === 'auto' ? 'No tier matched current sales' : '—';
+            source.className = 'value';
+        }
+    }
+
+    /* ============================================================
+       ✏️  INLINE TIER-RATE EDITING
+    ============================================================ */
+    function startEditTierRate(btn) {
+        const card = btn.closest('.tier-card');
+        if (!card) return;
+
+        const rateWrap = card.querySelector('.tier-rate-wrap');
+        const rateEl = card.querySelector('[data-tier-rate]');
+        if (!rateWrap || !rateEl) return;
+
+        if (rateWrap.querySelector('.tier-rate-input')) return;
+
+        const currentRate = parseFloat(String(rateEl.textContent).replace('%', '').trim()) || 0;
+
+        rateEl.style.display = 'none';
+        btn.style.display = 'none';
+
+        const input = document.createElement('input');
+        input.type = 'number';
+        input.min = 0;
+        input.max = 100;
+        input.step = 0.5;
+        input.value = currentRate;
+        input.className = 'tier-rate-input';
+
+        const suffix = document.createElement('span');
+        suffix.className = 'tier-rate-suffix';
+        suffix.textContent = '%';
+
+        rateWrap.appendChild(input);
+        rateWrap.appendChild(suffix);
+
+        input.focus();
+        input.select();
+
+        const commit = () => {
+            let newRate = parseFloat(input.value);
+            if (!Number.isFinite(newRate) || newRate < 0) newRate = currentRate;
+            if (newRate > 100) newRate = 100;
+
+            rateEl.textContent = `${newRate}%`;
+            rateEl.style.display = '';
+            btn.style.display = '';
+            card.dataset.rate = newRate;
+
+            input.remove();
+            suffix.remove();
+
+            if (selectedTier && selectedTier.tier === parseInt(card.dataset.tier, 10)) {
+                selectedTier.rate = newRate;
+                updateCommissionUI();
+            }
+
+            saveTierRate(parseInt(card.dataset.tier, 10), newRate);
+        };
+
+        input.addEventListener('blur', commit);
+        input.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') { e.preventDefault(); input.blur(); }
+            if (e.key === 'Escape') {
+                input.removeEventListener('blur', commit);
+                rateEl.style.display = '';
+                btn.style.display = '';
+                input.remove();
+                suffix.remove();
+            }
+        });
+    }
+
+    async function saveTierRate(tier, rate) {
+        console.log(`[saveTierRate] tier=${tier} rate=${rate}`);
+
+        if (typeof window.api.setTierRate !== 'function') {
+            showMessage('API missing: window.api.setTierRate — reload the page', 'error');
+            console.error('window.api.setTierRate is not a function');
+            return;
+        }
+
+        try {
+            const result = await window.api.setTierRate(tier, rate);
+            console.log('[saveTierRate] server response:', result);
+
+            if (result && result.success === true) {
+                showMessage(`✅ Tier ${tier} rate updated to ${rate}%`, 'success');
+                await refreshCommissionSummaryOnly();
+                await loadGameStats();
+            } else {
+                showMessage(`Failed: ${result?.error || 'Unknown error'}`, 'error');
+                await loadCommissionTier();
+            }
+        } catch (e) {
+            console.error('[saveTierRate] error:', e);
+            showMessage(`Error: ${e.message}`, 'error');
+            await loadCommissionTier();
+        }
+    }
+
+    async function refreshCommissionSummaryOnly() {
+        try {
+            const saved = await window.api.getCommissionTier?.();
+            if (!saved) return;
+
+            if (saved.mode) commissionMode = saved.mode;
+
+            if (saved.mode === 'auto') {
+                const autoTierInfo = saved.tiers?.find(t => t.tier === saved.tier);
+                if (autoTierInfo) {
+                    activeAutoTier = {
+                        tier: autoTierInfo.tier,
+                        rate: autoTierInfo.rate
+                    };
+                }
+            }
+
+            const label = document.getElementById('selectedTierLabel');
+            const rateEl = document.getElementById('selectedTierRate');
+            const source = document.getElementById('selectedTierSource');
+            const modeBadge = document.getElementById('commissionModeBadge');
+            const manualToggle = document.getElementById('commissionManualToggle');
+
+            manualToggle.checked = (commissionMode === 'manual');
+            modeBadge.textContent = commissionMode.toUpperCase();
+            modeBadge.className = commissionMode === 'manual' ? 'badge warning' : 'badge success';
+
+            document.querySelectorAll('.tier-card').forEach(c => c.classList.remove('active-auto'));
+            if (commissionMode === 'auto' && activeAutoTier?.tier != null) {
+                const autoCard = document.querySelector(`.tier-card[data-tier="${activeAutoTier.tier}"]`);
+                if (autoCard) autoCard.classList.add('active-auto');
+            }
+
+            if (commissionMode === 'manual' && selectedTier) {
+                label.textContent = `Tier ${selectedTier.tier}`;
+                rateEl.textContent = `${selectedTier.rate}%`;
+                source.textContent = 'Manual override';
+                source.className = 'value orange';
+            } else if (commissionMode === 'auto' && activeAutoTier?.tier != null) {
+                const rateCard = document.querySelector(`.tier-card[data-tier="${activeAutoTier.tier}"] [data-tier-rate]`);
+                const liveRate = rateCard
+                    ? parseFloat(String(rateCard.textContent).replace('%', ''))
+                    : activeAutoTier.rate;
+
+                label.textContent = `Tier ${activeAutoTier.tier} (auto)`;
+                rateEl.textContent = `${liveRate}%`;
+                source.textContent = 'Automatic';
+                source.className = 'value green';
+            } else {
+                label.textContent = '—';
+                rateEl.textContent = '—';
+                source.textContent = 'No tier matched';
+                source.className = 'value';
+            }
+        } catch (e) {
+            console.error('refreshCommissionSummaryOnly error:', e);
+        }
+    }
+
+    async function toggleCommissionMode(manual) {
+        const toggle = document.getElementById('commissionManualToggle');
+        toggle.disabled = true;
+
+        try {
+            let result;
+
+            if (manual) {
+                if (!selectedTier) {
+                    const fallbackTier = activeAutoTier?.tier ?? 0;
+                    const card = document.querySelector(`.tier-card[data-tier="${fallbackTier}"]`);
+                    if (card) {
+                        document.querySelectorAll('.tier-card').forEach(c => {
+                            c.classList.remove('selected', 'active-auto');
+                        });
+                        card.classList.add('selected');
+                        const rateEl = card.querySelector('[data-tier-rate]');
+                        const currentRate = rateEl
+                            ? parseFloat(String(rateEl.textContent).replace('%', '').trim())
+                            : parseFloat(card.dataset.rate);
+                        selectedTier = {
+                            tier: parseInt(card.dataset.tier, 10),
+                            min: parseFloat(card.dataset.min),
+                            max: parseFloat(card.dataset.max),
+                            rate: currentRate
+                        };
+                    } else {
+                        selectedTier = { tier: 0, min: 0, max: 499, rate: 10 };
+                    }
+                }
+                result = await window.api.setCommissionTier?.(selectedTier.tier);
+            } else {
+                result = await window.api.setAutoCommission?.();
+            }
+
+            if (result?.success !== false) {
+                commissionMode = manual ? 'manual' : 'auto';
+                updateCommissionUI();
+                showMessage(`Commission mode: ${commissionMode.toUpperCase()}`, 'success');
+            } else {
+                showMessage(`Failed: ${result?.error || 'Unknown'}`, 'error');
+                toggle.checked = !manual;
+            }
+        } catch (e) {
+            showMessage('Error: ' + e.message, 'error');
+            toggle.checked = !manual;
+        } finally {
+            toggle.disabled = false;
+        }
+    }
+
+    async function saveCommissionTier() {
+        if (!selectedTier) {
+            return showMessage('Pick a tier first', 'warning');
+        }
+
+        try {
+            const result = await window.api.setCommissionTier?.(selectedTier.tier);
+
+            if (result?.success !== false) {
+                commissionMode = 'manual';
+                updateCommissionUI();
+                showMessage(`✅ Tier ${selectedTier.tier} (${selectedTier.rate}%) saved — Manual mode`, 'success');
+            } else {
+                showMessage(`Failed: ${result?.error || 'Unknown'}`, 'error');
+            }
+        } catch (e) {
+            showMessage('Error: ' + e.message, 'error');
+        }
+    }
+
+    async function loadCommissionTier() {
+        try {
+            const saved = await window.api.getCommissionTier?.();
+            if (saved) {
+                commissionMode = saved.mode || 'auto';
+                if (saved.mode === 'manual' && saved.tier != null) {
+                    selectedTier = {
+                        tier: saved.tier,
+                        rate: saved.rate,
+                        min: saved.min,
+                        max: saved.max
+                    };
+                    const card = document.querySelector(`.tier-card[data-tier="${saved.tier}"]`);
+                    if (card) {
+                        document.querySelectorAll('.tier-card').forEach(c => c.classList.remove('selected'));
+                        card.classList.add('selected');
+                    }
+                }
+
+                if (Array.isArray(saved.tiers)) {
+                    saved.tiers.forEach(t => {
+                        const card = document.querySelector(`.tier-card[data-tier="${t.tier}"]`);
+                        if (!card) return;
+                        const rateEl = card.querySelector('[data-tier-rate]');
+                        if (rateEl && Number.isFinite(t.rate)) {
+                            rateEl.textContent = `${t.rate}%`;
+                            card.dataset.rate = t.rate;
+                        }
+                    });
+                }
+
+                updateCommissionUI();
+            }
+        } catch (e) {
+            console.error('Load commission error:', e);
+        }
+    }
+
+    /* ============================================================
+       GAME STATE
+    ============================================================ */
+    async function loadGameState() {
+        try {
+            const state = await window.api.getState();
+            if (!state) return;
+
+            document.getElementById('gameId').textContent = state.gameId || 'None';
+            document.getElementById('gameStarted').textContent = state.started ? 'Yes' : 'No';
+            document.getElementById('gamePaused').textContent = state.paused ? 'Yes' : 'No';
+            document.getElementById('numbersLeft').textContent = state.remainingNumbers ?? 75;
+
+            const statusEl = document.getElementById('gameStatus');
+            let statusText = 'No Game';
+            let statusClass = 'info';
+
+            if (state.isJackpotGame) {
+                statusText = '🔥 JACKPOT GAME';
+                statusClass = 'gold';
+            } else if (state.started && !state.paused) {
+                statusText = '▶ Running';
+                statusClass = 'success';
+            } else if (state.paused) {
+                statusText = '⏸ Paused';
+                statusClass = 'warning';
+            } else if (state.gameId) {
+                statusText = '⏹ Waiting';
+                statusClass = 'info';
+            }
+
+            statusEl.textContent = statusText;
+            statusEl.className = `badge ${statusClass}`;
+
+            const lastNums = state.calledNumbers?.slice(-10) || [];
+            const container = document.getElementById('lastCalledNumbers');
+            if (lastNums.length) {
+                container.innerHTML = lastNums
+                    .map(n => `<span class="called-chip">${n}</span>`)
+                    .join('');
+            } else {
+                container.textContent = 'No numbers called yet';
+            }
+
+            if (typeof state.jackpotArmed === 'boolean') {
+                jackpotArmed = state.jackpotArmed;
+                jackpotCounter = state.jackpotGamesCounter ?? jackpotCounter;
+                jackpotRequired = state.jackpotGamesRequired ?? jackpotRequired;
+                jackpotAmount = state.jackpotBalance ?? jackpotAmount;
+                renderJackpot();
+            }
+        } catch (e) {
+            console.error('Game state error:', e);
+        }
+    }
+
+    /* ============================================================
+       GAMES LIST
+    ============================================================ */
+    async function loadAllGames() {
+        try {
+            const games = await window.api.getAllGames() || [];
+            const stuck = await window.api.getStuckGames() || [];
+            document.getElementById('stuckGamesCount').textContent = `${stuck.length} stuck`;
+
+            const tbody = document.getElementById('gamesTableBody');
+            if (!games.length) {
+                tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;">No games</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = games.map(g => {
+                const statusClass =
+                    g.status === 'running' ? 'status-running' :
+                    g.status === 'waiting' ? 'status-waiting' :
+                    g.status === 'paused' ? 'status-paused' :
+                    'status-finished';
+                const isStuck = stuck.some(s => s.id === g.id);
+                return `<tr>
+                    <td>${g.id}</td>
+                    <td>${g.game_number || 'N/A'}</td>
+                    <td><span class="status-pill ${statusClass}">${g.status || 'unknown'}</span> ${isStuck ? '⚠️' : ''}</td>
+                    <td>${g.ticket_count || 0}</td>
+                    <td>${(g.total_sales || 0).toFixed(2)} Br</td>
+                    <td>${g.last_draw_time ? new Date(g.last_draw_time).toLocaleTimeString() : 'Never'}</td>
+                    <td>
+                        <button class="btn btn-warning btn-sm" onclick="finishGame(${g.id})">Finish</button>
+                        <button class="btn btn-danger btn-sm" onclick="resetGame(${g.id})">Reset</button>
+                    </td>
+                </tr>`;
+            }).join('');
+        } catch (e) {
+            console.error('Games error:', e);
+        }
+    }
+
+    async function finishGame(id) {
+        if (!confirm(`Finish game #${id}?`)) return;
+        try {
+            const r = await window.api.finishGame(id, 'admin');
+            if (r?.success) {
+                showMessage(`Game #${id} finished`, 'success');
+                await loadAllGames();
+                await loadGameStats();
+                await loadGameState();
+            } else {
+                showMessage(`Failed: ${r?.error}`, 'error');
+            }
+        } catch (e) {
+            showMessage('Error', 'error');
+        }
+    }
+
+    async function resetGame(id) {
+        if (!confirm(`⚠️ RESET game #${id}? This DELETES all data!`)) return;
+        try {
+            const r = await window.api.resetGameById(id, 'admin');
+            if (r?.success) {
+                showMessage(`Game #${id} reset`, 'success');
+                await loadAllGames();
+                await loadGameStats();
+                await loadGameState();
+            } else {
+                showMessage(`Failed: ${r?.error}`, 'error');
+            }
+        } catch (e) {
+            showMessage('Error', 'error');
+        }
+    }
+
+    async function checkStuckGames() {
+        const stuck = await window.api.getStuckGames() || [];
+        if (!stuck.length) return showMessage('No stuck games', 'success');
+        if (confirm(`${stuck.length} stuck game(s). Finish all?`)) {
+            for (const g of stuck) await finishGame(g.id);
+        }
+    }
+
+    function refreshGames() {
+        loadAllGames();
+        showMessage('Games refreshed', 'success');
+    }
+
+    /* ============================================================
+       ACTIONS
+    ============================================================ */
+    function viewSettings() {
+        window.location.href = '/settings.html';
+    }
+
+    function emergencyStop() {
+        if (confirm('EMERGENCY STOP? This will pause the current game.')) {
+            window.api?.pauseGame?.();
+            showMessage('EMERGENCY STOP activated', 'error');
+            refreshData();
+        }
+    }
+
+    /* ============================================================
+       REFRESH
+    ============================================================ */
+    async function refreshData() {
+        if (isLoading) return;
+        isLoading = true;
+        try {
+            await Promise.all([
+                loadWalletData(),
+                loadGameStats(),
+                loadGameState(),
+                loadAllGames(),
+                loadJackpotStatus(),
+                loadCallingInterval()
+            ]);
+            showMessage('Data refreshed!', 'success');
+        } catch (e) {
+            showMessage('Error refreshing', 'error');
+        } finally {
+            isLoading = false;
+        }
+    }
+
+    function startAutoRefresh() {
+        if (refreshTimer) clearInterval(refreshTimer);
+        refreshTimer = setInterval(() => {
+            if (!isLoading && document.visibilityState === 'visible') refreshData();
+        }, 60000);
+    }
+
+    /* ============================================================
+       REAL-TIME
+    ============================================================ */
+    function setupGameEventListeners() {
+        if (window.api.onGameStateChanged) {
+            window.api.onGameStateChanged((state) => {
+                if (!state) return;
+                document.getElementById('gameId').textContent = state.gameId || 'None';
+                document.getElementById('gameStarted').textContent = state.started ? 'Yes' : 'No';
+                document.getElementById('gamePaused').textContent = state.paused ? 'Yes' : 'No';
+                document.getElementById('numbersLeft').textContent = state.remainingNumbers ?? 75;
+
+                const statusEl = document.getElementById('gameStatus');
+                if (state.isJackpotGame) {
+                    statusEl.textContent = '🔥 JACKPOT GAME';
+                    statusEl.className = 'badge gold';
+                } else if (state.started && !state.paused) {
+                    statusEl.textContent = '▶ Running';
+                    statusEl.className = 'badge success';
+                } else if (state.paused) {
+                    statusEl.textContent = '⏸ Paused';
+                    statusEl.className = 'badge warning';
+                } else if (state.gameId) {
+                    statusEl.textContent = '⏹ Waiting';
+                    statusEl.className = 'badge info';
+                } else {
+                    statusEl.textContent = 'No Game';
+                    statusEl.className = 'badge info';
+                }
+
+                const lastNums = state.calledNumbers?.slice(-10) || [];
+                const container = document.getElementById('lastCalledNumbers');
+                if (lastNums.length) {
+                    container.innerHTML = lastNums.map(n => `<span class="called-chip">${n}</span>`).join('');
+                } else {
+                    container.textContent = 'No numbers called yet';
+                }
+
+                if (typeof state.jackpotArmed === 'boolean') {
+                    jackpotArmed = state.jackpotArmed;
+                    jackpotCounter = state.jackpotGamesCounter ?? jackpotCounter;
+                    jackpotRequired = state.jackpotGamesRequired ?? jackpotRequired;
+                    jackpotAmount = state.jackpotBalance ?? jackpotAmount;
+                    renderJackpot();
+                }
+
+                // Keep the interval badge in sync if the server tells us the current draw interval
+                if (state.settings?.drawInterval) {
+                    const sec = Math.max(1, Math.round(state.settings.drawInterval / 1000));
+                    const input = document.getElementById('drawIntervalSeconds');
+                    if (document.activeElement !== input) input.value = sec;
+                    document.getElementById('intervalBadge').textContent = `${sec} sec`;
+                }
+            });
+        }
+
+        if (window.api.onGameEnded) {
+            window.api.onGameEnded(() => refreshData());
+        }
+
+        if (window.api.onJackpotChanged) {
+            window.api.onJackpotChanged((data) => {
+                if (!data) return;
+                jackpotEnabled = data.enabled === true;
+                jackpotAmount = data.amount ?? jackpotAmount;
+                jackpotArmed = data.armed ?? jackpotArmed;
+                jackpotCounter = data.gamesCounter ?? jackpotCounter;
+                jackpotRequired = data.gamesRequired ?? jackpotRequired;
+                jackpotContributionPct = data.contributionPct ?? jackpotContributionPct;
+                renderJackpot();
+
+                if (data.wonThisGame && data.wonAmount) {
+                    showMessage(`🎰💰 JACKPOT WON! ${data.wonAmount.toFixed(2)} Br paid out`, 'success');
+                } else if (data.armedThisGame) {
+                    showMessage(`🔥 Jackpot ARMED — next game is a JACKPOT GAME!`, 'warning');
+                }
+            });
+        }
+
+        if (window.api.onCommissionRecorded) {
+            window.api.onCommissionRecorded((data) => {
+                if (!data?.tier) return;
+                loadGameStats();
+            });
+        }
+    }
+
+    /* ============================================================
+       VISIBILITY
+    ============================================================ */
+    document.addEventListener('visibilitychange', () => {
+        if (document.hidden) {
+            if (refreshTimer) clearInterval(refreshTimer);
+        } else {
+            startAutoRefresh();
+            refreshData();
+        }
+    });
+
+    /* ============================================================
+       INIT
+    ============================================================ */
+    (async function init() {
+        const ok = await verifySession();
+        if (!ok) return;
+
+        await refreshData();
+        await loadCommissionTier();
+        startAutoRefresh();
+        setupGameEventListeners();
+
+        document.querySelectorAll('.sidebar-nav a').forEach(a => {
+            a.addEventListener('click', () => {
+                if (window.innerWidth < 992) {
+                    document.getElementById('sidebar').classList.remove('open');
+                    document.getElementById('sidebarBackdrop').classList.remove('show');
+                }
+            });
+        });
+    })();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,2437 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="utf-8">
+    
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Bingo Caller — Game Room</title>
+    <script src="/js/api.js?v=20261101"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Noto+Sans+Ethiopic:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg:               #0D3767;
+            --bingo-red:        #F13737;
+            --tile-inactive:    #666666;
+            --grid-border:      #151515;
+            --text:             #FFFFFF;
+            --call-header:      #3D3D3D;
+            --call-content:     #EEEEEE;
+            --btn-start:        #08B9CD;
+            --btn-pause:        #FF9800;
+            --btn-reset:        #F44336;
+            --bet-border:       #FF8500;
+            --fullscreen:       #FF0062;
+            --called-blue:      #0000FF;
+            --btn-disabled:     #4a4a4a;
+            --tile-called:      #FFFFFF;
+            --tile-current-num: #0000FF;
+            --tile-current-ring:#FF8500;
+            --tile-winning:     #22C55E;
+            --tile-winning-text:#FFFFFF;
+            --check-teal:       #26A69A;
+            --lock-orange:      #FF9800;
+            --jackpot-gold:     #FFD700;
+            --jackpot-orange:   #FF8C00;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        html, body { height: 100%; }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            overflow-x: hidden;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .app {
+            min-height: 100vh;
+            padding: 18px 24px 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 18px;
+        }
+
+        .sound-status {
+            font-size: 16px;
+            font-weight: 500;
+            color: #FFFFFF;
+            padding: 2px 4px;
+            opacity: 0.95;
+        }
+
+        .jackpot-banner {
+            display: none;
+            align-items: center;
+            justify-content: space-between;
+            gap: 20px;
+            padding: 16px 26px;
+            background: linear-gradient(135deg, var(--jackpot-gold), var(--jackpot-orange));
+            color: #4a2800;
+            border-radius: 10px;
+            box-shadow: 0 6px 24px rgba(255,140,0,0.5), inset 0 0 0 3px rgba(255,255,255,0.35);
+            animation: jackpotGlow 1.8s ease-in-out infinite;
+        }
+
+        .jackpot-banner.show { display: flex; }
+
+        @keyframes jackpotGlow {
+            0%, 100% { box-shadow: 0 6px 24px rgba(255,140,0,0.5), inset 0 0 0 3px rgba(255,255,255,0.35); transform: scale(1); }
+            50% { box-shadow: 0 10px 40px rgba(255,140,0,0.85), inset 0 0 0 3px rgba(255,255,255,0.6); transform: scale(1.005); }
+        }
+
+        .jackpot-banner-left { display: flex; align-items: center; gap: 16px; }
+
+        .jackpot-banner-icon {
+            font-size: 52px;
+            filter: drop-shadow(0 3px 6px rgba(0,0,0,0.25));
+            animation: jackpotIconSpin 2.5s ease-in-out infinite;
+        }
+
+        @keyframes jackpotIconSpin {
+            0%, 100% { transform: rotate(-8deg); }
+            50% { transform: rotate(8deg); }
+        }
+
+        .jackpot-banner-text .jp-title {
+            font-size: 26px;
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            line-height: 1;
+            text-shadow: 0 1px 0 rgba(255,255,255,0.4);
+        }
+
+        .jackpot-banner-text .jp-sub {
+            font-size: 14px;
+            font-weight: 600;
+            margin-top: 4px;
+            opacity: 0.85;
+        }
+
+        .jackpot-banner-right { text-align: right; }
+
+        .jackpot-banner-right .jp-label {
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            opacity: 0.8;
+        }
+
+        .jackpot-banner-right .jp-amount {
+            font-size: 34px;
+            font-weight: 900;
+            font-variant-numeric: tabular-nums;
+            line-height: 1;
+            margin-top: 2px;
+        }
+
+        .jackpot-progress {
+            display: none;
+            align-items: center;
+            gap: 14px;
+            padding: 8px 16px;
+            background: rgba(0,0,0,0.25);
+            border-radius: 8px;
+            font-size: 13px;
+            color: rgba(255,255,255,0.9);
+            border-left: 4px solid var(--jackpot-gold);
+        }
+
+        .jackpot-progress.show { display: none; }
+
+        .jackpot-progress .jp-prog-icon { font-size: 22px; }
+        .jackpot-progress .jp-prog-text { font-weight: 600; }
+        .jackpot-progress .jp-prog-amount { font-weight: 800; color: var(--jackpot-gold); font-variant-numeric: tabular-nums; }
+        .jackpot-progress .jp-prog-sep { opacity: 0.4; }
+
+        .jackpot-progress .jp-prog-bar {
+            flex: 1; height: 6px; background: rgba(255,255,255,0.15); border-radius: 3px; overflow: hidden; min-width: 80px;
+        }
+
+        .jackpot-progress .jp-prog-fill {
+            height: 100%; background: linear-gradient(90deg, var(--jackpot-gold), var(--jackpot-orange)); width: 0%; transition: width 0.4s ease; border-radius: 3px;
+        }
+
+        .game-grid {
+            display: grid; grid-template-columns: 313px 1fr; gap: 24px; align-items: start;
+        }
+
+        .sidebar { display: flex; flex-direction: column; gap: 20px; }
+
+        .current-call {
+            background: var(--call-content); border: 2px solid #0a0a0a; width: 313px; display: flex; flex-direction: column;
+        }
+
+        .current-call-header {
+            background: var(--call-header); color: #FFFFFF; font-weight: 700; font-size: 22px; padding: 10px 14px; height: 48px; display: flex; align-items: center;
+        }
+
+        .current-call-body {
+            background: var(--call-content); min-height: 312px; display: flex; flex-direction: column; align-items: center; padding: 20px 14px 14px; gap: 12px;
+        }
+
+        .call-waiting {
+            color: #3a3a3a; font-size: 16px; font-weight: 500; padding: 20px 0; text-align: center;
+        }
+
+        .call-waiting .countdown {
+            display: block; margin-top: 10px; font-size: 48px; font-weight: 900; color: #F13737; font-variant-numeric: tabular-nums;
+        }
+
+        .call-ball {
+            width: 268px; height: 268px; border-radius: 50%; background: radial-gradient(circle at 32% 28%, #ff6a6a 0%, #e02a2a 45%, #a01818 100%); display: flex; align-items: center; justify-content: center; position: relative; box-shadow: 0 8px 24px rgba(0,0,0,0.35), inset -10px -14px 24px rgba(0,0,0,0.25), inset 8px 10px 20px rgba(255,255,255,0.18); margin-top: 4px;
+        }
+
+        .call-ball::after {
+            content: ''; position: absolute; bottom: -14px; left: 50%; transform: translateX(-50%); width: 60%; height: 14px; background: radial-gradient(ellipse, rgba(0,0,0,0.28) 0%, rgba(0,0,0,0) 70%); border-radius: 50%; filter: blur(3px);
+        }
+
+        .call-ball.blue { background: radial-gradient(circle at 32% 28%, #6aa8ff 0%, #1f5fd0 45%, #0f3a8a 100%); }
+        .call-ball.green { background: radial-gradient(circle at 32% 28%, #7ee6a0 0%, #1fa85a 45%, #0f6b3a 100%); }
+        .call-ball.orange { background: radial-gradient(circle at 32% 28%, #ffc471 0%, #e08610 45%, #a05a06 100%); }
+        .call-ball.purple { background: radial-gradient(circle at 32% 28%, #c49aff 0%, #7a3ce0 45%, #4d1fa0 100%); }
+
+        .call-ball.pulse { animation: ballPulse 0.6s ease; }
+        @keyframes ballPulse { 0% { transform: scale(1); } 50% { transform: scale(1.06); } 100% { transform: scale(1); } }
+
+        .call-ball-inner {
+            width: 172px; height: 172px; border-radius: 50%; background: #FFFFFF; border: 3px solid rgba(0,0,0,0.08); display: flex; flex-direction: column; align-items: center; justify-content: center; color: #1a1a1a; font-weight: 900; line-height: 1;
+        }
+
+        .call-ball-letter { font-size: 44px; margin-bottom: 6px; }
+        .call-ball-number { font-size: 46px; }
+
+        .call-counter {
+            font-size: 38px; font-weight: 800; color: #2a2a2a; padding-top: 14px; letter-spacing: 0.5px;
+        }
+
+        .bet-display {
+            width: 253px; height: 55px; background: #0a0a0a; border: 6px solid var(--bet-border); border-radius: 3px; display: flex; align-items: center; justify-content: center; color: #bdbdbd; font-size: 30px; font-weight: 800;
+        }
+
+        .play-area { display: flex; flex-direction: column; gap: 20px; min-width: 0; }
+
+        .board {
+            display: grid; grid-template-columns: repeat(16, 1fr); gap: 8px; background: var(--grid-border); padding: 6px; border: 4px solid var(--grid-border); width: 100%; max-width: 1287px;
+        }
+
+        .board-tile {
+            aspect-ratio: 0.88 / 1; min-width: 0; background: var(--tile-inactive); border: 3px solid var(--grid-border); color: #000000; font-family: inherit; font-weight: 800; font-size: clamp(20px, 2.4vw, 46px); display: flex; align-items: center; justify-content: center; cursor: pointer; user-select: none; padding: 0; transition: background 0.12s ease, color 0.12s ease, outline 0.12s ease;
+        }
+
+        .board-tile.letter { background: var(--bingo-red); color: #FFFFFF; font-size: clamp(22px, 2.6vw, 40px); cursor: default; border: 4px solid var(--grid-border); }
+        .board-tile.called { background: var(--tile-called); color: var(--called-blue); }
+        .board-tile.current { background: #FFFFFF; color: var(--tile-current-num); outline: 4px solid var(--tile-current-ring); outline-offset: -6px; border-radius: 8px; }
+        .board-tile.winning { background: var(--tile-winning); color: var(--tile-winning-text); }
+        .board-tile.winning.current { outline-color: var(--tile-current-ring); }
+
+        .board-tile.blink-last { animation: cellBlink 0.5s ease-in-out 3; }
+        @keyframes cellBlink { 0% { filter: brightness(1); } 50% { filter: brightness(1.5); } 100% { filter: brightness(1); } }
+
+        .prize-block {
+            display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; padding: 10px 20px; text-align: center;
+        }
+
+        .prize-heading { font-size: 29px; font-weight: 400; color: #FFFFFF; letter-spacing: 1px; }
+        .prize-amount  { font-size: 80px; font-weight: 800; color: #FFFFFF; line-height: 1; }
+        .prize-currency{ font-size: 33px; font-weight: 400; color: #FFFFFF; line-height: 1; }
+
+        .prize-jackpot {
+            display: none; font-size: 16px; font-weight: 700; color: var(--jackpot-gold); margin-top: 6px; padding: 4px 12px; background: rgba(255,215,0,0.12); border: 1px solid rgba(255,215,0,0.4); border-radius: 20px; letter-spacing: 0.03em; animation: jackpotGlow 2s ease-in-out infinite;
+        }
+
+        .prize-jackpot.show { display: inline-block; }
+
+        .control-row {
+            display: flex; align-items: center; justify-content: center; gap: 14px; flex-wrap: wrap; padding: 8px 0; position: relative;
+        }
+
+        .ctl-btn {
+            min-width: 132px; height: 42px; padding: 0 18px; font-family: inherit; font-weight: 700; font-size: 16px; letter-spacing: 0.8px; text-transform: uppercase; color: #FFFFFF; background: #4a4a4a; border: none; border-radius: 4px; cursor: pointer; transition: transform 0.08s ease, filter 0.12s ease;
+        }
+
+        .ctl-btn:hover:not(:disabled) { filter: brightness(1.12); transform: translateY(-1px); }
+        .ctl-btn:disabled { opacity: 0.55; cursor: not-allowed; }
+
+        .ctl-btn.back    { background: #6b7280; }
+        .ctl-btn.back:hover:not(:disabled) { background: #4b5563; }
+        .ctl-btn.shuffle { background: #4a4a4a; }
+        .ctl-btn.start   { background: var(--btn-start); }
+        .ctl-btn.pause   { background: var(--btn-pause); }
+        .ctl-btn.check   { background: var(--btn-start); }
+        .ctl-btn.reset   { background: var(--btn-reset); }
+
+        .ctl-select {
+            height: 42px; padding: 0 12px; font-family: inherit; font-weight: 700; font-size: 14px; color: #FFFFFF; background: #2a2a2a; border: 1px solid #555; border-radius: 4px; cursor: pointer;
+        }
+
+        .fullscreen-btn {
+            /* sits just above the right end of the control row so it never covers RESET */
+            position: absolute; right: 0; bottom: 100%; margin-bottom: 12px; width: 191px; height: 55px; background: var(--fullscreen); color: #FFFFFF; border: none; border-radius: 6px; font-family: inherit; font-weight: 700; font-size: 22px; cursor: pointer; z-index: 900; box-shadow: 0 6px 18px rgba(0,0,0,0.4);
+        }
+        .fullscreen-btn:hover { filter: brightness(1.08); }
+
+        .check-dialog {
+            position: fixed; left: 0; bottom: 0; width: 660px; max-width: 100vw; min-height: 357px; background: #FFFFFF; color: #111111; border: 1px solid #cfcfcf; border-radius: 0 20px 0 0; box-shadow: 0 10px 40px rgba(0,0,0,0.35); z-index: 1100; display: none; flex-direction: column; padding: 14px 18px 18px;
+        }
+
+        .check-dialog.show { display: flex; }
+
+        .check-dialog-header {
+            display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;
+        }
+
+        .check-dialog-title {
+            color: var(--called-blue); font-size: 29px; font-weight: 700; font-family: 'Noto Sans Ethiopic', 'Inter', sans-serif;
+        }
+
+        .check-dialog-close {
+            width: 44px; height: 44px; border-radius: 50%; background: #000000; color: #FFFFFF; border: none; font-size: 24px; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center;
+        }
+
+        .check-dialog-body {
+            display: flex; gap: 20px; flex: 1; min-height: 0;
+        }
+
+        .card-preview {
+            width: 318px; height: 294px; display: grid; grid-template-columns: repeat(5, 1fr); grid-template-rows: 40px repeat(5, 1fr); border: 3px solid #000; background: #FFFFFF; flex-shrink: 0;
+        }
+
+        .card-preview .cp-header {
+            background: var(--bingo-red); color: #FFFFFF; font-weight: 800; font-size: 22px; display: flex; align-items: center; justify-content: center; border: 1px solid #000;
+        }
+
+        .card-preview .cp-cell {
+            background: #FFFFFF; color: #111111; border: 1px solid #000; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 18px;
+        }
+
+        .card-preview .cp-cell.free { background: #FFF7CC; font-weight: 800; font-size: 14px; }
+        .card-preview .cp-cell.called { background: #FFA640; color: #FFFFFF; }
+        .card-preview .cp-cell.winning { background: var(--tile-winning); color: #FFFFFF; }
+
+        .check-dialog-controls {
+            display: flex; flex-direction: column; gap: 14px; padding-top: 40px;
+        }
+
+        .card-input {
+            width: 203px; height: 43px; background: #F2F2F2; border: 1px solid #d6d6d6; border-radius: 3px; text-align: center; font-family: inherit; font-size: 20px; font-weight: 700; color: #111111; outline: none;
+        }
+
+        .card-input:focus { border-color: var(--check-teal); background: #FFFFFF; }
+
+        .card-check-btn {
+            width: 203px; height: 39px; background: var(--check-teal); color: #FFFFFF; border: none; border-radius: 4px; font-family: inherit; font-weight: 800; font-size: 15px; letter-spacing: 0.8px; text-transform: uppercase; cursor: pointer; box-shadow: 0 2px 6px rgba(0,0,0,0.2); transition: background 0.15s ease;
+        }
+
+        .card-check-btn:hover:not(:disabled) { filter: brightness(1.08); }
+        .card-check-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+        .card-check-btn.lock { background: var(--lock-orange); }
+
+        .amharic-msg {
+            font-family: 'Noto Sans Ethiopic', 'Inter', sans-serif; font-size: 20px; font-weight: 700; text-align: center; min-height: 30px; padding: 4px 0;
+        }
+        .amharic-msg.success { color: #FF9800; }
+        .amharic-msg.error   { color: #F44336; }
+
+        .message-area {
+            position: fixed; top: 20px; right: 20px; z-index: 2000; display: flex; flex-direction: column; gap: 10px; pointer-events: none;
+        }
+
+        .message {
+            background: #FFFFFF; color: #111111; border-left: 5px solid var(--btn-start); padding: 12px 18px; border-radius: 4px; box-shadow: 0 8px 24px rgba(0,0,0,0.35); font-size: 14px; font-weight: 600; pointer-events: auto; max-width: 340px; animation: slideIn 0.25s ease;
+        }
+        .message.success { border-left-color: #22b573; }
+        .message.warning { border-left-color: var(--btn-pause); }
+        .message.error   { border-left-color: var(--btn-reset); }
+        .message.jackpot { border-left-color: var(--jackpot-gold); background: linear-gradient(135deg, #fff9e6, #ffe9a8); }
+
+        @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to   { transform: translateX(0); opacity: 1; } }
+
+        .firework-particle, .confetti-piece, .sparkle { position: fixed; pointer-events: none; z-index: 9999; }
+
+        @keyframes firework-burst { 0% { transform: translate(0, 0) scale(1); opacity: 1; } 100% { transform: translate(var(--tx), var(--ty)) scale(0); opacity: 0; } }
+        @keyframes confetti-fall { 0% { transform: translateY(-20px) rotate(0deg) scale(1); opacity: 1; } 100% { transform: translateY(calc(100vh + 50px)) rotate(var(--rotation)) scale(0.5); opacity: 0; } }
+        @keyframes sparkle-fade { 0% { transform: scale(1); opacity: 1; } 100% { transform: scale(3); opacity: 0; } }
+
+        .shuffle-overlay {
+            position: fixed; inset: 0; z-index: 9998; display: flex; align-items: center; justify-content: center; background: rgba(0, 0, 0, 0.45); backdrop-filter: blur(18px) saturate(1.35); -webkit-backdrop-filter: blur(18px) saturate(1.35); opacity: 0; transition: opacity 0.35s ease; pointer-events: none;
+        }
+
+        .shuffle-overlay.show { opacity: 1; pointer-events: auto; }
+
+        .shuffle-circle {
+            position: relative; width: 90vmin; height: 90vmin; max-width: 92vw; max-height: 92vh; background: transparent; border: none; box-shadow: none; overflow: visible; animation: shuffleCirclePop 0.45s cubic-bezier(0.22, 0.61, 0.36, 1) forwards;
+        }
+
+        @keyframes shuffleCirclePop { 0% { transform: scale(0.6); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+
+        .shuffle-ball {
+            position: absolute; border-radius: 50%; background: radial-gradient(circle at 32% 26%, #ffffff 0%, #f8f8f8 42%, #e2e2e2 70%, #c8c8c8 100%); border: 3px solid rgba(0,0,0,0.22); color: #0D3767; font-family: 'Inter', sans-serif; font-weight: 900; display: flex; align-items: center; justify-content: center; box-shadow: 0 10px 24px rgba(0,0,0,0.5), inset -6px -6px 12px rgba(0,0,0,0.2), inset 6px 6px 14px rgba(255,255,255,1); will-change: transform; pointer-events: none; user-select: none; left: 0; top: 0; z-index: 2;
+        }
+
+        .shuffle-overlay.fading { opacity: 0; transition: opacity 0.6s ease; }
+
+        @media (max-width: 900px) { .shuffle-circle { width: 88vmin; height: 88vmin; } }
+        @media (max-width: 640px) { .shuffle-circle { width: 90vmin; height: 90vmin; } }
+
+        @media (max-width: 1200px) {
+            .game-grid { grid-template-columns: 260px 1fr; gap: 18px; }
+            .current-call, .bet-display { width: 100%; }
+            .call-ball { width: 220px; height: 220px; }
+            .call-ball-inner { width: 140px; height: 140px; }
+            .call-ball-letter { font-size: 36px; }
+            .call-ball-number { font-size: 40px; }
+            .prize-amount { font-size: 60px; }
+            .jackpot-banner-text .jp-title { font-size: 22px; }
+            .jackpot-banner-right .jp-amount { font-size: 28px; }
+        }
+
+        @media (max-width: 900px) {
+            .game-grid { grid-template-columns: 1fr; }
+            .sidebar { flex-direction: row; flex-wrap: wrap; }
+            .sidebar > * { flex: 1 1 240px; }
+            .prize-amount { font-size: 48px; }
+            .fullscreen-btn { width: 140px; height: 44px; font-size: 16px; }
+            .check-dialog { width: 100vw; border-radius: 20px 20px 0 0; height: auto; max-height: 90vh; overflow-y: auto; }
+            .check-dialog-body { flex-direction: column; }
+            .card-preview { width: 100%; height: auto; aspect-ratio: 1 / 1.15; }
+            .check-dialog-controls { padding-top: 0; }
+            .card-input, .card-check-btn { width: 100%; }
+            .jackpot-banner { flex-direction: column; align-items: stretch; text-align: center; gap: 10px; }
+            .jackpot-banner-left, .jackpot-banner-right { justify-content: center; text-align: center; }
+        }
+
+        @media (max-width: 640px) {
+            .app { padding: 12px; }
+            .board { gap: 4px; padding: 4px; }
+            .board-tile { font-size: 14px; border-width: 2px; }
+            .board-tile.letter { font-size: 16px; border-width: 2px; }
+            .ctl-btn { min-width: 104px; height: 38px; font-size: 13px; }
+            .prize-heading { font-size: 20px; }
+            .prize-amount { font-size: 36px; }
+            .prize-currency { font-size: 22px; }
+            .jackpot-banner-text .jp-title { font-size: 18px; }
+            .jackpot-banner-right .jp-amount { font-size: 24px; }
+            .jackpot-banner-icon { font-size: 38px; }
+        }
+
+        .legacy-hidden { position: absolute; left: -10000px; top: -10000px; }
+    </style>
+
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#0a0614">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="VIP Bingo">
+  <link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj4KICA8ZGVmcz4KICAgIDxyYWRpYWxHcmFkaWVudCBpZD0iYmciIGN4PSI1MCUiIGN5PSI0MCUiIHI9Ijc1JSI+CiAgICAgIDxzdG9wIG9mZnNldD0iMCUiIHN0b3AtY29sb3I9IiMyNDEyMzMiLz4KICAgICAgPHN0b3Agb2Zmc2V0PSIxMDAlIiBzdG9wLWNvbG9yPSIjMGEwNjE0Ii8+CiAgICA8L3JhZGlhbEdyYWRpZW50PgogICAgPGxpbmVhckdyYWRpZW50IGlkPSJnb2xkIiB4MT0iMCUiIHkxPSIwJSIgeDI9IjEwMCUiIHkyPSIxMDAlIj4KICAgICAgPHN0b3Agb2Zmc2V0PSIwJSIgc3RvcC1jb2xvcj0iI2ZmZDc2YSIvPgogICAgICA8c3RvcCBvZmZzZXQ9IjEwMCUiIHN0b3AtY29sb3I9IiNjOTkyMmMiLz4KICAgIDwvbGluZWFyR3JhZGllbnQ+CiAgICA8bGluZWFyR3JhZGllbnQgaWQ9InZpcCIgeDE9IjAlIiB5MT0iMCUiIHgyPSIxMDAlIiB5Mj0iMCUiPgogICAgICA8c3RvcCBvZmZzZXQ9IjAlIiBzdG9wLWNvbG9yPSIjZmY1ZWE4Ii8+CiAgICAgIDxzdG9wIG9mZnNldD0iNTAlIiBzdG9wLWNvbG9yPSIjZmZlMTRkIi8+CiAgICAgIDxzdG9wIG9mZnNldD0iMTAwJSIgc3RvcC1jb2xvcj0iIzRmZDRmZiIvPgogICAgPC9saW5lYXJHcmFkaWVudD4KICA8L2RlZnM+CiAgPHJlY3Qgd2lkdGg9IjUxMiIgaGVpZ2h0PSI1MTIiIHJ4PSI5NiIgZmlsbD0idXJsKCNiZykiLz4KICA8cmVjdCB4PSI0MCIgeT0iNDAiIHdpZHRoPSI0MzIiIGhlaWdodD0iNDMyIiByeD0iNTYiIGZpbGw9Im5vbmUiIHN0cm9rZT0idXJsKCNnb2xkKSIgc3Ryb2tlLXdpZHRoPSIxNCIvPgogIDx0ZXh0IHg9IjI1NiIgeT0iMjM2IiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmb250LWZhbWlseT0iQXJpYWwgQmxhY2ssIEFyaWFsLCBzYW5zLXNlcmlmIiBmb250LXdlaWdodD0iOTAwIgogICAgICAgIGZvbnQtc2l6ZT0iMTQwIiBmaWxsPSJ1cmwoI3ZpcCkiIHN0cm9rZT0iIzFhMGIyOCIgc3Ryb2tlLXdpZHRoPSI0Ij5WSVA8L3RleHQ+CiAgPHRleHQgeD0iMjU2IiB5PSIzNjAiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZvbnQtZmFtaWx5PSJHZW9yZ2lhLCAnVGltZXMgTmV3IFJvbWFuJywgc2VyaWYiIGZvbnQtc3R5bGU9Iml0YWxpYyIgZm9udC13ZWlnaHQ9IjcwMCIKICAgICAgICBmb250LXNpemU9Ijk2IiBmaWxsPSIjZmYzYjVjIiBzdHJva2U9IiMxYTBiMjgiIHN0cm9rZS13aWR0aD0iMyI+QmluZ288L3RleHQ+CiAgPGNpcmNsZSBjeD0iMTEwIiBjeT0iMzAwIiByPSIzNCIgZmlsbD0iIzE3YzdmZiIvPgogIDx0ZXh0IHg9IjExMCIgeT0iMzExIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmb250LWZhbWlseT0iQXJpYWwsIHNhbnMtc2VyaWYiIGZvbnQtd2VpZ2h0PSI3MDAiIGZvbnQtc2l6ZT0iMzAiIGZpbGw9IiMwYTA2MTQiPjc8L3RleHQ+CiAgPGNpcmNsZSBjeD0iNDAyIiBjeT0iMzAwIiByPSIzNCIgZmlsbD0iI2ZmMmVjNCIvPgogIDx0ZXh0IHg9IjQwMiIgeT0iMzExIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmb250LWZhbWlseT0iQXJpYWwsIHNhbnMtc2VyaWYiIGZvbnQtd2VpZ2h0PSI3MDAiIGZvbnQtc2l6ZT0iMjgiIGZpbGw9IiMwYTA2MTQiPjg4PC90ZXh0Pgo8L3N2Zz4K">
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js', { scope: '/' }).catch(() => {});
+      });
+    }
+  </script>
+</head>
+<body>
+
+<div class="app" id="appContainer">
+
+    <div class="sound-status" id="soundStatus">Stored 80 new sounds successfully.</div>
+
+    <div class="jackpot-banner" id="jackpotBanner">
+        <div class="jackpot-banner-left">
+            <div class="jackpot-banner-icon">🎰</div>
+            <div class="jackpot-banner-text">
+                <div class="jp-title">🔥 JACKPOT GAME 🔥</div>
+                <div class="jp-sub">This game's winner takes the jackpot pool!</div>
+            </div>
+        </div>
+        <div class="jackpot-banner-right">
+            <div class="jp-label">Jackpot Prize</div>
+            <div class="jp-amount" id="jackpotBannerAmount">0.00 Br</div>
+        </div>
+    </div>
+
+    <div class="jackpot-progress" id="jackpotProgress">
+        <span class="jp-prog-icon">🎰</span>
+        <span class="jp-prog-text">Jackpot Pool:</span>
+        <span class="jp-prog-amount" id="jackpotProgressAmount">0.00 Br</span>
+        <span class="jp-prog-sep">·</span>
+        <span class="jp-prog-text" id="jackpotProgressGames">0 / 6 games</span>
+        <div class="jp-prog-bar">
+            <div class="jp-prog-fill" id="jackpotProgressFill"></div>
+        </div>
+    </div>
+
+    <div class="game-grid">
+
+        <aside class="sidebar">
+            <div class="current-call">
+                <div class="current-call-header">Current Call</div>
+                <div class="current-call-body" id="currentCallBody">
+                    <div class="call-waiting" id="callWaiting">Waiting for first call</div>
+                    <div class="call-ball" id="currentBallWrap" style="display:none;">
+                        <div class="call-ball-inner">
+                            <div class="call-ball-letter" id="currentBallLetter">--</div>
+                            <div class="call-ball-number" id="currentBallNumber">--</div>
+                        </div>
+                    </div>
+                    <div class="call-counter" id="callCounter" style="display:none;">0 / 75</div>
+                </div>
+            </div>
+
+            <div class="bet-display" id="betDisplay">BET:- 10.00</div>
+        </aside>
+
+        <main class="play-area">
+            <div class="board" id="boardLayout"></div>
+
+            <div class="prize-block">
+                <div class="prize-heading">WINNER PRIZE</div>
+                <div class="prize-amount" id="prizePool">0.00</div>
+                <div class="prize-currency">Birr</div>
+                <div class="prize-jackpot" id="prizeJackpot"></div>
+            </div>
+
+            <div class="control-row">
+                <button class="ctl-btn back"    id="backBtn">◀ BACK TO REGISTER</button>
+                <button class="ctl-btn shuffle" id="shuffleBtn">SHUFFLE</button>
+                <button class="ctl-btn start"   id="startBtn">START</button>
+                <button class="ctl-btn pause"   id="pauseBtn" disabled>PAUSE</button>
+                <button class="ctl-btn check"   id="checkBtn">CHECK</button>
+                <button class="ctl-btn reset"   id="newGameBtn">RESET</button>
+                <button class="fullscreen-btn" id="fullscreenBtn">Go Fullscreen</button>
+            </div>
+        </main>
+    </div>
+</div>
+
+
+<div class="check-dialog" id="checkDialog">
+    <div class="check-dialog-header">
+        <div class="check-dialog-title" id="checkDialogTitle">Check Card</div>
+        <button class="check-dialog-close" id="checkDialogClose">×</button>
+    </div>
+    <div class="check-dialog-body">
+        <div class="card-preview" id="cardPreview"></div>
+        <div class="check-dialog-controls">
+            <input type="number" id="cartelaInput" class="card-input" min="1" autocomplete="off">
+            <button class="card-check-btn" id="quickCheckBtn">CHECK</button>
+            <div class="amharic-msg" id="amharicMsg"></div>
+        </div>
+    </div>
+</div>
+
+<div class="message-area" id="messageArea"></div>
+
+<div class="shuffle-overlay" id="shuffleOverlay" style="display:none;">
+    <div class="shuffle-circle" id="shuffleCircle"></div>
+</div>
+
+<div class="legacy-hidden">
+    <div id="adminChip" class="admin-chip"></div>
+    <div id="playersChip"><span id="playerCount">—</span></div>
+    <div id="jackpotCard" style="display:none;">
+        <input type="checkbox" id="jackpotToggle">
+        <div id="jackpotPill"></div>
+    </div>
+    <div id="commissionCard"><div id="commissionTiers"></div></div>
+    <div id="cartelaModal">
+        <div class="modal-header"><h2 id="modalTitle">Cartela Details</h2></div>
+        <div id="cartelaGrid"></div>
+        <button id="modalDisqualifyBtn">⛔ Disqualify Cartela</button>
+    </div>
+    <div id="lastCalledValue">--</div>
+    <div id="totalCalled">0</div>
+</div>
+
+<script>
+/* ============================================================ */
+/*  CONFIG                                                       */
+/* ============================================================ */
+const ROWS = [
+    { letter: 'B', start: 1,  end: 15 },
+    { letter: 'I', start: 16, end: 30 },
+    { letter: 'N', start: 31, end: 45 },
+    { letter: 'G', start: 46, end: 60 },
+    { letter: 'O', start: 61, end: 75 }
+];
+
+const FALLBACK_COMMISSION_TIERS = [
+    { min: 500,  max: 1000, pct: 15 },
+    { min: 1100, max: 1500, pct: 30 },
+    { min: 1600, max: 3000, pct: 35 },
+    { min: 3100, max: 6000, pct: 40 }
+];
+
+const AMHARIC = {
+    empty:        '',
+    noCard:       'ካርድ አልተገኘም',
+    notSold:      'ይህ ካርድ አልተሸጠም',
+    disqualified: 'ካርድ ተሰርዟል',
+    notWinner:    'ያሸነፈ ካርድ አይደለም',
+    lateClaim:    'ይህ ካርቴላ አልፎታል',
+    winner:       'እንኳን ደስ አለህ! ቢንጎ!',
+    checking:     'በመፈተሽ ላይ...',
+    lockReady:    'ተቆልፎ ለመሰረዝ ይጫኑ',
+    locked:       'ካርዱ ተቆልፎ ተሰርዟል!'
+};
+
+/* ============================================================ */
+/*  STATE                                                        */
+/* ============================================================ */
+let gameState = {
+    isRunning: false,
+    isPaused: false,
+    calledNumbers: [],
+    lastFiveNumbers: [],
+    lastCalled: null,
+    prizePool: 0,
+    displayPrize: 0,
+    totalSales: 0,
+    gameId: null,
+    isShuffling: false,
+    audioEnabled: true,
+    soldCartelas: new Set(),
+    betAmount: 10.00,
+
+    activeCommissionRate: null,
+    activeCommissionMode: 'auto',
+
+    firstDrawDelayMs: 3500,
+    firstDrawStartedAt: 0,
+
+    currentCheckedCard: null,
+    winningNumbers: new Set(),
+    pendingLockCardId: null,
+
+    jackpotEnabled: false,
+    jackpotAmount: 0,
+    jackpotArmed: false,
+    jackpotCounter: 0,
+    jackpotRequired: 6,
+    jackpotContributionPct: 10
+};
+
+let audioCache = {};
+let isAudioUnlocked = false;
+let lastKnownCalledCount = 0;
+let isPauseResumeInProgress = false;
+let lastBlinkedNumber = null;
+let currentUser = null;
+let isAdmin = false;
+
+let numberSoundsUnmutedAt = 0;
+let startSoundDurationMs = 3500;
+
+let firstDrawCountdownTimer = null;
+
+let serverPollTimer = null;
+const SERVER_POLL_INTERVAL_MS = 2000; // Safety net only: live updates arrive over the socket
+
+/* ============================================================ */
+/*  MESSAGES                                                     */
+/* ============================================================ */
+function showMessage(text, type = 'info') {
+    const area = document.getElementById('messageArea');
+    const msg = document.createElement('div');
+    msg.className = `message ${type}`;
+    msg.textContent = text;
+    area.appendChild(msg);
+    setTimeout(() => {
+        msg.style.transition = 'opacity 0.3s, transform 0.3s';
+        msg.style.opacity = '0';
+        msg.style.transform = 'translateX(20px)';
+        setTimeout(() => msg.remove(), 300);
+    }, 2800);
+}
+
+function setAmharicMessage(text, type = 'success') {
+    const el = document.getElementById('amharicMsg');
+    if (!el) return;
+    el.textContent = text || '';
+    el.className = 'amharic-msg ' + (type || '');
+}
+
+/* ============================================================ */
+/*  JACKPOT UI                                                   */
+/* ============================================================ */
+function updateJackpotUI() {
+    const banner = document.getElementById('jackpotBanner');
+    const progress = document.getElementById('jackpotProgress');
+    const bannerAmount = document.getElementById('jackpotBannerAmount');
+    const progAmount = document.getElementById('jackpotProgressAmount');
+    const progGames = document.getElementById('jackpotProgressGames');
+    const progFill = document.getElementById('jackpotProgressFill');
+    const prizeJackpot = document.getElementById('prizeJackpot');
+
+    if (!gameState.jackpotEnabled) {
+        banner.classList.remove('show');
+        progress.classList.remove('show');
+        if (prizeJackpot) prizeJackpot.classList.remove('show');
+        return;
+    }
+
+    const isActiveJackpotGame = gameState.jackpotArmed && gameState.isRunning && !gameState.isPaused;
+    if (isActiveJackpotGame) {
+        banner.classList.add('show');
+        progress.classList.remove('show');
+        bannerAmount.textContent = `${(gameState.jackpotAmount || 0).toFixed(2)} Br`;
+    } else {
+        banner.classList.remove('show');
+        progress.classList.add('show');
+
+        progAmount.textContent = `${(gameState.jackpotAmount || 0).toFixed(2)} Br`;
+        const req = gameState.jackpotRequired || 6;
+        const cur = gameState.jackpotCounter || 0;
+        progGames.textContent = `${cur} / ${req} games`;
+        const pct = Math.min(100, Math.round((cur / req) * 100));
+        progFill.style.width = pct + '%';
+
+        if (gameState.jackpotArmed) {
+            progFill.style.background = 'linear-gradient(90deg, #FFD700, #FF8C00, #FFD700)';
+        } else {
+            progFill.style.background = 'linear-gradient(90deg, #FFD700, #FF8C00)';
+        }
+    }
+
+    if (prizeJackpot) {
+        if (gameState.jackpotArmed && (gameState.jackpotAmount || 0) > 0) {
+            prizeJackpot.textContent = `🎰 + Jackpot ${gameState.jackpotAmount.toFixed(2)} Br for the winner!`;
+            prizeJackpot.classList.add('show');
+        } else {
+            prizeJackpot.classList.remove('show');
+        }
+    }
+}
+
+/* ============================================================ */
+/*  BET DISPLAY                                                  */
+/* ============================================================ */
+function updateBetDisplay() {
+    const el = document.getElementById('betDisplay');
+    if (!el) return;
+    const bet = Number.isFinite(gameState.betAmount) ? gameState.betAmount : 10.0;
+    el.textContent = `BET:- ${bet.toFixed(2)}`;
+}
+
+/* ============================================================ */
+/*  FIRST-DRAW COUNTDOWN                                         */
+/* ============================================================ */
+function startFirstDrawCountdown() {
+    stopFirstDrawCountdown();
+    gameState.firstDrawStartedAt = Date.now();
+
+    const waitEl = document.getElementById('callWaiting');
+    const delay = gameState.firstDrawDelayMs;
+
+    const tick = () => {
+        if (!gameState.isRunning || gameState.isPaused) {
+            stopFirstDrawCountdown();
+            return;
+        }
+        if (gameState.calledNumbers.length > 0) {
+            stopFirstDrawCountdown();
+            return;
+        }
+
+        const elapsed = Date.now() - gameState.firstDrawStartedAt;
+        const remainingMs = Math.max(0, delay - elapsed);
+        const remainingSec = Math.ceil(remainingMs / 1000);
+
+        if (waitEl) {
+            if (remainingSec > 0) {
+                waitEl.innerHTML = `First number in <span class="countdown">${remainingSec}</span>`;
+            } else {
+                waitEl.textContent = 'Drawing…';
+            }
+        }
+
+        if (remainingMs <= 0) {
+            stopFirstDrawCountdown();
+        }
+    };
+
+    tick();
+    firstDrawCountdownTimer = setInterval(tick, 200);
+}
+
+function stopFirstDrawCountdown() {
+    if (firstDrawCountdownTimer) {
+        clearInterval(firstDrawCountdownTimer);
+        firstDrawCountdownTimer = null;
+    }
+}
+
+/* ============================================================ */
+/*  CHECK BUTTON STATE MACHINE                                   */
+/* ============================================================ */
+function setCheckButtonMode(mode) {
+    const btn = document.getElementById('quickCheckBtn');
+    if (!btn) return;
+    if (mode === 'lock') {
+        btn.classList.add('lock');
+        btn.dataset.mode = 'lock';
+        btn.textContent = 'LOCK';
+    } else {
+        btn.classList.remove('lock');
+        btn.dataset.mode = 'check';
+        btn.textContent = 'CHECK';
+    }
+}
+
+function resetCheckButtonState() {
+    setCheckButtonMode('check');
+    gameState.pendingLockCardId = null;
+}
+
+/* ============================================================ */
+/*  SESSION GUARD                                                */
+/* ============================================================ */
+async function verifySession() {
+    try {
+        const me = await window.api.me();
+        if (!me?.success || !me.user) {
+            window.location.href = '/login.html';
+            return false;
+        }
+        currentUser = me.user;
+        isAdmin = me.user.role === 'admin';
+        if (!isAdmin) {   // the game room is for admins only
+            window.location.href = '/register.html?forbidden=1';
+            return false;
+        }
+        return true;
+    } catch (e) {
+        window.location.href = '/login.html';
+        return false;
+    }
+}
+
+/* ============================================================ */
+/*  AUDIO — with instant preloading and browser unlocking        */
+/* ============================================================ */
+function preloadAudioFiles() {
+    try {
+        // Small sounds first
+        const named = { start: 'game_started', win: 'win', nowin: 'nowin', pause: 'pause',
+                        shuffle: 'draw_sound', disqualify: 'disqualify', jackpot: 'jackpot',
+                        lateClaim: 'disqualified_voice' };
+        for (const [key, file] of Object.entries(named)) {
+            audioCache[key] = new Audio(`/assets/sounds/${file}.mp3`);
+        }
+
+        // Number sounds load a few at a time so the page and live updates aren't starved on a weak
+        // connection. Any number needed earlier is loaded on demand (see playNumberSound).
+        if (navigator.connection?.saveData) return;
+        const queue = [];
+        for (let i = 1; i <= 75; i++) queue.push(i);
+        const loadNext = () => {
+            queue.splice(0, 3).forEach(i => {
+                if (!audioCache[i]) audioCache[i] = new Audio(`/assets/sounds/${i}.mp3`);
+            });
+            if (queue.length) setTimeout(loadNext, 1500);
+        };
+        setTimeout(loadNext, 2000);
+        console.log('🔊 Sounds loading in the background.');
+    } catch (e) {}
+}
+
+function unlockAudio() {
+    if (isAudioUnlocked) return;
+    try {
+        // Play and instantly pause a silent audio to unlock the browser context
+        const unlocker = new Audio();
+        unlocker.volume = 0;
+        unlocker.play().then(() => {
+            isAudioUnlocked = true;
+            console.log('🔊 Audio context unlocked by user interaction');
+        }).catch(() => {});
+    } catch (e) {}
+}
+
+// Only one open game tab speaks: the last one opened or clicked takes over the audio.
+let isAudioOwner = true;
+const audioChannel = ('BroadcastChannel' in window) ? new BroadcastChannel('bingo-audio') : null;
+function claimAudio() {
+    isAudioOwner = true;
+    if (audioChannel) audioChannel.postMessage('claim');
+}
+if (audioChannel) {
+    audioChannel.onmessage = (e) => { if (e.data === 'claim') isAudioOwner = false; };
+    claimAudio();
+    window.addEventListener('pointerdown', claimAudio);
+}
+
+function playNumberSound(n) {
+    if (!gameState.audioEnabled || !isAudioOwner) return;
+
+    if (Date.now() < numberSoundsUnmutedAt) {
+        console.log(`🔇 Skipping number sound ${n} — startup sound still playing`);
+        return;
+    }
+
+    try {
+        if (!audioCache[n]) audioCache[n] = new Audio(`/assets/sounds/${n}.mp3`);
+        if (audioCache[n]) {
+            audioCache[n].pause();
+            audioCache[n].currentTime = 0;
+            audioCache[n].volume = 0.8;
+            audioCache[n].play().catch(() => {});
+        }
+    } catch (e) {}
+}
+
+function playSound(name) {
+    if (!isAudioOwner) return;
+    try {
+        if (audioCache[name]) {
+            audioCache[name].pause();
+            audioCache[name].currentTime = 0;
+            audioCache[name].volume = 0.8;
+            audioCache[name].play().catch(() => {});
+        }
+    } catch (e) {}
+}
+
+/* ============================================================ */
+/*  HELPERS                                                      */
+/* ============================================================ */
+function getLetter(n) {
+    if (n <= 15) return 'B';
+    if (n <= 30) return 'I';
+    if (n <= 45) return 'N';
+    if (n <= 60) return 'G';
+    return 'O';
+}
+
+function ballClassForLetter(letter) {
+    switch (letter) {
+        case 'B': return '';
+        case 'I': return 'blue';
+        case 'N': return 'green';
+        case 'G': return 'orange';
+        case 'O': return 'purple';
+        default:  return '';
+    }
+}
+
+/* ============================================================ */
+/*  BOARD                                                        */
+/* ============================================================ */
+function buildBoard() {
+    const layout = document.getElementById('boardLayout');
+    layout.innerHTML = '';
+
+    ROWS.forEach(row => {
+        const letterTile = document.createElement('div');
+        letterTile.className = 'board-tile letter';
+        letterTile.textContent = row.letter;
+        layout.appendChild(letterTile);
+
+        for (let n = row.start; n <= row.end; n++) {
+            const cell = document.createElement('button');
+            cell.type = 'button';
+            cell.className = 'board-tile';
+            cell.id = 'n' + n;
+            cell.dataset.number = n;
+            cell.textContent = n;
+            cell.addEventListener('click', () => checkNumber(n));
+            layout.appendChild(cell);
+        }
+    });
+}
+
+buildBoard();
+
+function checkNumber(num) {
+    if (gameState.calledNumbers.includes(num)) {
+        showMessage(`✅ ${num} (${getLetter(num)}) has been called`, 'success');
+    } else {
+        showMessage(`❌ ${num} (${getLetter(num)}) not called yet`, 'error');
+    }
+}
+
+/* ============================================================ */
+/*  WALLET / SOLD                                                */
+/* ============================================================ */
+async function updateWalletBalance() {
+    try {
+        const result = await window.api.getWalletBalance();
+        gameState.walletBalance = (typeof result === 'number') ? result : (result?.balance || 0);
+    } catch (e) {}
+}
+
+async function loadSoldCartelas() {
+    try {
+        if (window.api && window.api.getGameTickets && gameState.gameId) {
+            const tickets = await window.api.getGameTickets(gameState.gameId);
+            if (tickets && tickets.length > 0) {
+                gameState.soldCartelas.clear();
+                let totalSales = 0;
+                tickets.forEach(t => {
+                    if (t.cartela_id) gameState.soldCartelas.add(t.cartela_id);
+                    if (t.status === 'active' && t.price) totalSales += t.price;
+                });
+                gameState.totalSales = totalSales;
+                updatePlayerCount();
+                updatePrizeDisplay();
+            }
+        }
+    } catch (e) {}
+}
+
+function updatePlayerCount() {
+    const el = document.getElementById('playerCount');
+    if (!el) return;
+    el.textContent = gameState.soldCartelas.size;
+}
+
+/* ============================================================ */
+/*  PRIZE DISPLAY                                                */
+/* ============================================================ */
+function updatePrizeDisplay() {
+    const prize = Number.isFinite(gameState.prizePool) ? gameState.prizePool : 0;
+
+    const prizeEl = document.getElementById('prizePool');
+    if (prizeEl) prizeEl.textContent = prize.toFixed(2);
+}
+
+/* ============================================================ */
+/*  BOARD RESET                                                  */
+/* ============================================================ */
+function clearBoard() {
+    stopFirstDrawCountdown();
+
+    for (let i = 1; i <= 75; i++) {
+        const cell = document.getElementById('n' + i);
+        if (cell) cell.classList.remove('called', 'current', 'winning', 'blink-last');
+    }
+    gameState.calledNumbers = [];
+    gameState.lastFiveNumbers = [];
+    gameState.lastCalled = null;
+    gameState.prizePool = 0;
+    gameState.displayPrize = 0;
+    gameState.totalSales = 0;
+    gameState.winningNumbers.clear();
+    lastBlinkedNumber = null;
+    resetCheckButtonState();
+
+    document.getElementById('currentBallWrap').style.display = 'none';
+    const waitEl = document.getElementById('callWaiting');
+    waitEl.style.display = 'block';
+    waitEl.textContent = 'Waiting for first call';
+
+    document.getElementById('callCounter').style.display = 'none';
+    document.getElementById('callCounter').textContent = '0 / 75';
+    document.getElementById('prizePool').textContent = '0.00';
+    const pj = document.getElementById('prizeJackpot');
+    if (pj) pj.classList.remove('show');
+}
+
+/* ============================================================ */
+/*  INSTANT NUMBER DISPLAY (No Queue)                            */
+/* ============================================================ */
+function showNumberInstant(num) {
+    // If it's already displayed, skip
+    if (gameState.calledNumbers.includes(num)) return;
+
+    // Add to our local state
+    gameState.calledNumbers.push(num);
+    gameState.lastCalled = num;
+
+    // Play its sound instantly
+    playNumberSound(num);
+
+    // Update the big current-call ball
+    const ballWrap = document.getElementById('currentBallWrap');
+    const waitEl = document.getElementById('callWaiting');
+    const counter = document.getElementById('callCounter');
+
+    if (waitEl) waitEl.style.display = 'none';
+    if (ballWrap) ballWrap.style.display = 'flex';
+    if (counter) counter.style.display = 'block';
+
+    const letter = getLetter(num);
+    const letterEl = document.getElementById('currentBallLetter');
+    const numberEl = document.getElementById('currentBallNumber');
+    if (letterEl) letterEl.textContent = letter;
+    if (numberEl) numberEl.textContent = num;
+
+    if (ballWrap) {
+        ballWrap.classList.remove('blue', 'green', 'orange', 'purple');
+        const cls = ballClassForLetter(letter);
+        if (cls) ballWrap.classList.add(cls);
+
+        ballWrap.classList.remove('pulse');
+        void ballWrap.offsetWidth;
+        ballWrap.classList.add('pulse');
+    }
+
+    if (counter) counter.textContent = `${gameState.calledNumbers.length} / 75`;
+
+    // Highlight the tile on the board
+    const cell = document.getElementById('n' + num);
+    if (cell) {
+        document.querySelectorAll('.board-tile.blink-last').forEach(c => c.classList.remove('blink-last'));
+        cell.classList.add('called', 'blink-last');
+        setTimeout(() => cell.classList.remove('blink-last'), 1500);
+        lastBlinkedNumber = num;
+    }
+
+    // Also mark all previously-called numbers on the board
+    for (const calledNum of gameState.calledNumbers) {
+        const c = document.getElementById('n' + calledNum);
+        if (c) c.classList.add('called');
+    }
+    
+    // Clear `current` from every tile except the one we just called
+    document.querySelectorAll('.board-tile.current').forEach(c => c.classList.remove('current'));
+    if (cell) cell.classList.add('current');
+
+    // Remove `winning` if the game is still running
+    if (!gameState.winningNumbers || gameState.winningNumbers.size === 0) {
+        document.querySelectorAll('.board-tile.winning').forEach(c => c.classList.remove('winning'));
+    }
+}
+
+/* ============================================================ */
+/*  FULL FORCE SYNC (Handles Reload & State Recovery)            */
+/* ============================================================ */
+function forceFullSync(state) {
+    if (!state) return;
+
+    const dbCalled = state.calledNumbers || [];
+    const lastCalledRaw = state.lastCalled;
+
+    // ── Cross-game guard (FIXED) ──
+    // forceFullSync used to ignore state.gameId, so when a NEW game started in
+    // the same tab the old board was kept: new numbers were appended to the
+    // previous game's list, and any number already shown in the previous game
+    // was swallowed by the includes() check below and NEVER displayed.
+    if (state.gameId != null && gameState.gameId != null && state.gameId !== gameState.gameId) {
+        clearBoard();
+    }
+    if (state.gameId != null) {
+        gameState.gameId = state.gameId;
+    }
+
+    // Store the authoritative server state
+    gameState.isRunning = state.started || false;
+    gameState.isPaused = state.paused || false;
+    gameState.prizePool = state.prizePool || 0;
+
+    const serverBet =
+        (typeof state.settings?.thicketPrice === 'number' ? state.settings.thicketPrice : null) ??
+        (typeof state.settings?.thicket_price === 'number' ? state.settings.thicket_price : null) ??
+        (typeof state.thicketPrice === 'number' ? state.thicketPrice : null) ??
+        (typeof state.thicket_price === 'number' ? state.thicket_price : null) ??
+        (typeof state.betAmount === 'number' ? state.betAmount : null);
+
+    if (serverBet != null && Number.isFinite(serverBet) && serverBet > 0) {
+        gameState.betAmount = serverBet;
+    }
+    updateBetDisplay();
+
+    if (state.commission) {
+        if (state.commission.mode) gameState.activeCommissionMode = state.commission.mode;
+        const rate = state.commission.rate;
+        if (Number.isFinite(rate) && rate >= 0) gameState.activeCommissionRate = rate;
+    }
+
+    if (typeof state.settings?.firstDrawDelay === 'number' && state.settings.firstDrawDelay > 0) {
+        gameState.firstDrawDelayMs = state.settings.firstDrawDelay;
+        startSoundDurationMs = state.settings.firstDrawDelay;
+    }
+
+    if (typeof state.jackpotEnabled === 'boolean') {
+        gameState.jackpotEnabled = state.jackpotEnabled;
+        gameState.jackpotAmount = state.jackpotBalance ?? gameState.jackpotAmount;
+        gameState.jackpotArmed = state.jackpotArmed ?? gameState.jackpotArmed;
+        gameState.jackpotCounter = state.jackpotGamesCounter ?? gameState.jackpotCounter;
+        gameState.jackpotRequired = state.jackpotGamesRequired ?? gameState.jackpotRequired;
+        updateJackpotUI();
+    }
+
+    updatePrizeDisplay();
+
+    // ---- Instantly display ALL called numbers that we don't have yet ----
+    const displayed = new Set(gameState.calledNumbers);
+    const pending = dbCalled.filter(n => !displayed.has(n));
+
+    if (pending.length > 0) {
+        pending.sort((a, b) => dbCalled.indexOf(a) - dbCalled.indexOf(b));
+        // Catch-up after a stall: mark the missed numbers on the board quietly and
+        // announce only the newest one, instead of firing every sound at once.
+        const missed = pending.slice(0, -1);
+        for (const num of missed) {
+            gameState.calledNumbers.push(num);
+            const c = document.getElementById('n' + num);
+            if (c) c.classList.add('called');
+        }
+        if (missed.length) console.warn(`⏩ Caught up ${missed.length} missed number(s): ${missed.join(', ')}`);
+        showNumberInstant(pending[pending.length - 1]);
+    }
+
+    // Update lastCalled (used by the UI for the big ball)
+    const lastNum = lastCalledRaw != null ? parseInt(lastCalledRaw, 10) : null;
+    if (lastNum) {
+        gameState.lastCalled = lastNum;
+    }
+
+    // If we have no numbers to show, ensure the UI reflects the final state
+    if (gameState.calledNumbers.length === 0) {
+        const waitEl = document.getElementById('callWaiting');
+        const ballWrap = document.getElementById('currentBallWrap');
+        const counter = document.getElementById('callCounter');
+
+        if (waitEl) waitEl.style.display = 'block';
+        if (ballWrap) ballWrap.style.display = 'none';
+        if (counter) counter.style.display = 'none';
+
+        if (gameState.isRunning && !gameState.isPaused) {
+            if (!firstDrawCountdownTimer) startFirstDrawCountdown();
+        } else {
+            stopFirstDrawCountdown();
+            if (waitEl) waitEl.textContent = 'Waiting for first call';
+        }
+    }
+
+    // Board tiles for winning numbers
+    if (gameState.winningNumbers && gameState.winningNumbers.size > 0) {
+        for (const n of gameState.winningNumbers) {
+            const cell = document.getElementById('n' + n);
+            if (cell) cell.classList.add('winning');
+        }
+    }
+
+    lastKnownCalledCount = dbCalled.length;
+
+    const startBtn = document.getElementById('startBtn');
+    const pauseBtn = document.getElementById('pauseBtn');
+    const shuffleBtn = document.getElementById('shuffleBtn');
+    const backBtn = document.getElementById('backBtn');
+
+    if (startBtn && pauseBtn) {
+        if (gameState.isRunning) {
+            startBtn.disabled = true;
+            pauseBtn.disabled = false;
+            if (gameState.isPaused) {
+                pauseBtn.textContent = 'RESUME';
+                pauseBtn.classList.remove('pause');
+                pauseBtn.classList.add('start');
+            } else {
+                pauseBtn.textContent = 'PAUSE';
+                pauseBtn.classList.add('pause');
+                pauseBtn.classList.remove('start');
+            }
+            if (shuffleBtn) shuffleBtn.disabled = true;
+        } else {
+            startBtn.disabled = false;
+            pauseBtn.disabled = true;
+            if (shuffleBtn) shuffleBtn.disabled = false;
+        }
+    }
+
+    if (backBtn) {
+        const canGoBack = !gameState.isRunning;
+        backBtn.disabled = !canGoBack;
+        backBtn.style.opacity = canGoBack ? '1' : '0.4';
+        backBtn.style.cursor  = canGoBack ? 'pointer' : 'not-allowed';
+        backBtn.title = canGoBack
+            ? 'Return to card selection (game stays waiting)'
+            : 'Game is running — cannot return';
+    }
+}
+
+/* ============================================================ */
+/*  CONTINUOUS SERVER SYNC                                       */
+/* ============================================================ */
+function startServerPolling() {
+    if (serverPollTimer) return;
+    let pollInFlight = false;   // never stack requests on a slow connection
+    serverPollTimer = setInterval(async () => {
+        if (pollInFlight) return;
+        pollInFlight = true;
+        try {
+            if (!gameState.gameId && !gameState.isRunning) return;
+            const s = await window.api.getState();
+            if (s) forceFullSync(s);
+        } catch (e) {
+            // Silent — the socket events are still working
+        } finally {
+            pollInFlight = false;
+        }
+    }, SERVER_POLL_INTERVAL_MS);
+}
+
+function stopServerPolling() {
+    if (serverPollTimer) {
+        clearInterval(serverPollTimer);
+        serverPollTimer = null;
+    }
+}
+
+/* ============================================================ */
+/*  GAME ID INIT                                                 */
+/* ============================================================ */
+async function initializeGameId() {
+    try {
+        // Follow the game in progress first; only fall back to a waiting game.
+        let newGameId = null;
+        const running = await window.api.getRunningGame();
+        if (running?.id) newGameId = running.id;
+        if (!newGameId) {
+            const waiting = await window.api.getWaitingGame();
+            if (waiting?.id) newGameId = waiting.id;
+        }
+        if (newGameId !== gameState.gameId) {
+            clearBoard();
+            gameState.gameId = newGameId;
+            if (gameState.gameId) {
+                const s = await window.api.getState();
+                forceFullSync(s);
+            }
+            return true;
+        }
+        return gameState.gameId !== null;
+    } catch (e) {
+        console.error('Game ID init error:', e);
+        return false;
+    }
+}
+
+async function loadGameData() {
+    clearBoard();
+    await initializeGameId();
+    if (gameState.gameId) {
+        const s = await window.api.getState();
+        forceFullSync(s);
+        await loadSoldCartelas();
+    }
+    await loadJackpotStatus();
+    await loadSettings();
+}
+
+/* ============================================================ */
+/*  JACKPOT STATUS                                               */
+/* ============================================================ */
+async function loadJackpotStatus() {
+    try {
+        const jp = await window.api.getJackpotStatus?.();
+        if (jp) {
+            gameState.jackpotEnabled = jp.enabled === true;
+            gameState.jackpotAmount = jp.amount ?? 0;
+            gameState.jackpotArmed = jp.armed === true;
+            gameState.jackpotCounter = jp.gamesCounter ?? 0;
+            gameState.jackpotRequired = jp.gamesRequired ?? 6;
+            gameState.jackpotContributionPct = jp.contributionPct ?? 10;
+            updateJackpotUI();
+        }
+    } catch (e) {}
+}
+
+/* ============================================================ */
+/*  SETTINGS                                                     */
+/* ============================================================ */
+async function loadSettings() {
+    try {
+        const s = await window.api.getSettings();
+        if (!s) return;
+
+        const price =
+            (typeof s.thicket_price === 'number' ? s.thicket_price : null) ??
+            (typeof s.ticket_price === 'number' ? s.ticket_price : null) ??
+            (typeof s.betAmount === 'number' ? s.betAmount : null);
+        if (price != null && Number.isFinite(price) && price > 0) {
+            gameState.betAmount = price;
+        }
+
+        if (typeof s.first_draw_delay_ms === 'number' && s.first_draw_delay_ms > 0) {
+            gameState.firstDrawDelayMs = s.first_draw_delay_ms;
+            startSoundDurationMs = s.first_draw_delay_ms;
+        }
+
+        updateBetDisplay();
+        updatePrizeDisplay();
+    } catch (e) {}
+}
+
+/* ============================================================ */
+/*  COMMISSION CONFIG                                            */
+/* ============================================================ */
+async function loadCommissionConfig() {
+    try {
+        const cfg = await window.api.getCommissionTier?.();
+        if (cfg) {
+            if (cfg.mode) gameState.activeCommissionMode = cfg.mode;
+            if (Number.isFinite(cfg.rate)) gameState.activeCommissionRate = cfg.rate;
+        }
+    } catch (e) {}
+}
+
+/* ============================================================ */
+/*  CHECK DIALOG                                                 */
+/* ============================================================ */
+function openCheckDialog() {
+    const dialog = document.getElementById('checkDialog');
+    dialog.classList.add('show');
+    const input = document.getElementById('cartelaInput');
+    input.value = '';
+    previewCartela(null);
+    setAmharicMessage('');
+    resetCheckButtonState();
+    setTimeout(() => input.focus(), 50);
+}
+
+function closeCheckDialog() {
+    document.getElementById('checkDialog').classList.remove('show');
+    setAmharicMessage('');
+    resetCheckButtonState();
+}
+
+async function previewCartela(cartelaNum) {
+    const preview = document.getElementById('cardPreview');
+    const title = document.getElementById('checkDialogTitle');
+    if (!preview) return;
+
+    if (title) title.textContent = cartelaNum ? `Check Card No. - ${cartelaNum}` : 'Check Card No.';
+
+    const headers = ['B', 'I', 'N', 'G', 'O'];
+
+    let nums = null;
+    try {
+        if (cartelaNum && window.api.getCartelaById) {
+            const cartela = await window.api.getCartelaById(cartelaNum);
+            if (cartela) {
+                if (typeof cartela.numbers === 'string') nums = cartela.numbers.split(',').map(Number);
+                else if (Array.isArray(cartela.numbers)) nums = cartela.numbers;
+                gameState.currentCheckedCard = cartela;
+            } else {
+                gameState.currentCheckedCard = null;
+            }
+        }
+    } catch (e) {}
+
+    let html = '';
+    headers.forEach(h => {
+        html += `<div class="cp-header">${h}</div>`;
+    });
+
+    for (let row = 0; row < 5; row++) {
+        for (let col = 0; col < 5; col++) {
+            const isFree = (row === 2 && col === 2);
+            let display = '';
+            let cls = '';
+
+            if (isFree) {
+                // The free square is always marked; it takes the winning color when a
+                // winning line runs through the center.
+                display = 'Free';
+                cls = 'free called';
+                if (nums && gameState.winningNumbers.size) {
+                    const at = (r, c) => nums[c * 5 + r] || 0;
+                    const lines = [
+                        [0, 1, 3, 4].map(c => at(2, c)),
+                        [0, 1, 3, 4].map(r => at(r, 2)),
+                        [0, 1, 3, 4].map(i => at(i, i)),
+                        [0, 1, 3, 4].map(i => at(i, 4 - i))
+                    ];
+                    if (lines.some(l => l.every(n => n && gameState.winningNumbers.has(n)))) cls = 'free winning';
+                }
+            } else if (nums) {
+                const idx = col * 5 + row;
+                const n = nums[idx] || 0;
+                display = n === 0 ? '' : n;
+
+                if (n && gameState.winningNumbers.has(n)) cls = 'winning';
+                else if (n && gameState.calledNumbers.includes(n)) cls = 'called';
+            }
+
+            html += `<div class="cp-cell ${cls}">${display}</div>`;
+        }
+    }
+    preview.innerHTML = html;
+}
+
+/* ============================================================ */
+/*  COMPUTE WINNING NUMBERS                                      */
+/* ============================================================ */
+function computeWinningNumbers(cartelaNums, calledSet, patterns) {
+    const grid = Array(5).fill().map(() => Array(5).fill(0));
+    for (let col = 0; col < 5; col++) {
+        for (let row = 0; row < 5; row++) {
+            grid[row][col] = cartelaNums[col * 5 + row] || 0;
+        }
+    }
+
+    const winning = new Set();
+    const addRow = (r) => { for (let c = 0; c < 5; c++) if (grid[r][c]) winning.add(grid[r][c]); };
+    const addCol = (c) => { for (let r = 0; r < 5; r++) if (grid[r][c]) winning.add(grid[r][c]); };
+
+    (patterns || []).forEach(p => {
+        const name = String(p);
+        const mRow = name.match(/Horizontal Row\s+(\d+)/i);
+        if (mRow) { const r = parseInt(mRow[1], 10) - 1; if (r >= 0 && r < 5) addRow(r); return; }
+
+        const mCol = name.match(/Vertical Column\s+([BINGO])/i);
+        if (mCol) { const c = ['B','I','N','G','O'].indexOf(mCol[1].toUpperCase()); if (c >= 0) addCol(c); return; }
+
+        if (/Main Diagonal/i.test(name)) for (let i = 0; i < 5; i++) if (grid[i][i]) winning.add(grid[i][i]);
+        if (/Anti Diagonal|Other Diagonal/i.test(name)) for (let i = 0; i < 5; i++) if (grid[i][4 - i]) winning.add(grid[i][4 - i]);
+        if (/Four Corners/i.test(name)) [grid[0][0], grid[0][4], grid[4][0], grid[4][4]].forEach(n => n && winning.add(n));
+        if (/Full House|Blackout/i.test(name)) for (let r = 0; r < 5; r++) for (let c = 0; c < 5; c++) if (grid[r][c]) winning.add(grid[r][c]);
+        if (!/Row|Column|Diagonal|Corners|Full|Blackout/i.test(name)) {
+            for (let r = 0; r < 5; r++) for (let c = 0; c < 5; c++) {
+                const n = grid[r][c];
+                if (n && calledSet.has(n)) winning.add(n);
+            }
+        }
+    });
+
+    return winning;
+}
+
+/* ============================================================ */
+/*  CHECK BUTTON                                                 */
+/* ============================================================ */
+async function onCheckButtonClick() {
+    const btn = document.getElementById('quickCheckBtn');
+    const mode = btn.dataset.mode || 'check';
+    if (mode === 'lock') return lockAndDisqualify();
+    return checkTicket();
+}
+
+async function checkTicket() {
+    const input = document.getElementById('cartelaInput');
+    const cartelaNum = parseInt(input.value);
+
+    if (!cartelaNum || isNaN(cartelaNum)) {
+        setAmharicMessage('ካርድ ቁጥር ያስገቡ', 'error');
+        return showMessage('Enter a card number', 'warning');
+    }
+
+    await previewCartela(cartelaNum);
+
+    const btn = document.getElementById('quickCheckBtn');
+    btn.disabled = true;
+    btn.textContent = 'CHECKING…';
+    setAmharicMessage(AMHARIC.checking, 'success');
+
+    try {
+        if (!gameState.soldCartelas.has(cartelaNum)) {
+            setAmharicMessage(AMHARIC.notSold, 'error');
+            showMessage(`❌ Card #${cartelaNum} not sold in this game`, 'error');
+            return;
+        }
+
+        const tickets = await window.api.getGameTickets(gameState.gameId);
+        const ticket = tickets?.find(t => t.cartela_id == cartelaNum);
+
+        if (ticket && (ticket.status === 'disqualified' || ticket.disqualified)) {
+            setAmharicMessage(AMHARIC.disqualified, 'error');
+            showMessage(`⛔ Card #${cartelaNum} is already DISQUALIFIED`, 'error');
+            return;
+        }
+
+        const cartela = await window.api.getCartelaById(cartelaNum);
+        if (!cartela) {
+            setAmharicMessage(AMHARIC.noCard, 'error');
+            return showMessage(`Card #${cartelaNum} not found`, 'error');
+        }
+
+        const winnerCheck = await window.api.checkCartela(cartelaNum);
+
+        if (winnerCheck?.valid) {
+            const prizeAmount = winnerCheck.prize_amount || gameState.displayPrize || gameState.prizePool;
+            const jackpotBonus = winnerCheck.jackpotBonus || 0;
+            const result = await window.api.recordWinner(cartelaNum, winnerCheck.type || 'bingo', prizeAmount);
+
+            if (result?.success) {
+                await window.api.pauseGame();
+                gameState.isRunning = false;
+                const winnerRank = await getWinnerRank(cartelaNum);
+
+                let cartelaNums = [];
+                if (typeof cartela.numbers === 'string') cartelaNums = cartela.numbers.split(',').map(Number);
+                else if (Array.isArray(cartela.numbers)) cartelaNums = cartela.numbers;
+
+                const calledSet = new Set(gameState.calledNumbers);
+                const patterns = winnerCheck.patterns || [winnerCheck.type || 'BINGO'];
+                gameState.winningNumbers = computeWinningNumbers(cartelaNums, calledSet, patterns);
+
+                forceFullSync(await window.api.getState());
+                await previewCartela(cartelaNum);
+
+                if (jackpotBonus > 0) {
+                    setAmharicMessage('🎰 ጃክፖት አሸንፈዋል!', 'success');
+                    showMessage(`🎰💰 JACKPOT WON! +${jackpotBonus.toFixed(2)} Br bonus`, 'jackpot');
+                    playSound('jackpot');
+                } else {
+                    setAmharicMessage(AMHARIC.winner, 'success');
+                }
+                showMessage(`🏆 WINNER! #${cartelaNum} wins ${prizeAmount.toFixed(2)} Br`, 'success');
+
+                celebrate(cartelaNum, prizeAmount, patterns, winnerRank);
+            }
+        } else if (winnerCheck?.late) {
+            // LATE CLAIM: the card completed the required pattern(s) on an earlier
+            // ball, but was only checked now. Announce the late-claim message and lock it.
+            playSound('lateClaim');
+            setAmharicMessage(AMHARIC.lateClaim, 'error');
+            showMessage(`⏱️ Card #${cartelaNum} completed the pattern on an earlier ball — claimed late. Locking card…`, 'warning');
+            gameState.pendingLockCardId = cartelaNum;
+            await lockAndDisqualify(true);   // auto-lock; voice already announced it
+            return;
+        } else {
+            // Not a winner — play the "no win" sound
+            playSound('nowin');
+            setAmharicMessage(AMHARIC.notWinner, 'error');
+            showMessage(`ℹ️ Card #${cartelaNum} not a winner`, 'info');
+        }
+
+        gameState.pendingLockCardId = cartelaNum;
+        setCheckButtonMode('lock');
+        setAmharicMessage(AMHARIC.lockReady, 'success');
+    } catch (e) {
+        setAmharicMessage('ስህተት ተፈጥሯል', 'error');
+        showMessage('Error: ' + e.message, 'error');
+    } finally {
+        btn.disabled = false;
+        if (btn.dataset.mode !== 'lock') btn.textContent = 'CHECK';
+    }
+}
+
+/* ============================================================ */
+/*  LOCK & DISQUALIFY                                            */
+/* ============================================================ */
+async function lockAndDisqualify(silent = false) {
+    const cardId = gameState.pendingLockCardId;
+    if (!cardId) {
+        setAmharicMessage('ምንም የሚቆለፍ ካርድ የለም', 'error');
+        return resetCheckButtonState();
+    }
+
+    const btn = document.getElementById('quickCheckBtn');
+    btn.disabled = true;
+    btn.textContent = 'LOCKING…';
+
+    try {
+        const result = await window.api.disqualifyTicket(cardId);
+
+        if (result?.success) {
+            if (!silent) {
+                playSound('disqualify');
+                setAmharicMessage(AMHARIC.locked, 'success');
+            }
+            showMessage(`🔒 Card #${cardId} locked & disqualified`, 'warning');
+
+            gameState.winningNumbers.clear();
+            forceFullSync(await window.api.getState());
+            await previewCartela(cardId);
+
+            setTimeout(() => closeCheckDialog(), 900);
+        } else {
+            setAmharicMessage(result?.error || 'ማሰናከል አልተሳካም', 'error');
+            showMessage('Failed to disqualify: ' + (result?.error || 'unknown'), 'error');
+        }
+    } catch (e) {
+        setAmharicMessage('ስህተት ተፈጥሯል', 'error');
+        showMessage('Error: ' + e.message, 'error');
+    } finally {
+        btn.disabled = false;
+        // Reset the button to CHECK mode so the user can type another
+        // number and check it. If the dialog is closing, this is harmless.
+        resetCheckButtonState();
+        btn.textContent = 'CHECK';
+    }
+}
+
+/* ============================================================ */
+/*  WINNER RANK                                                  */
+/* ============================================================ */
+async function getWinnerRank(cartelaNum) {
+    try {
+        const winners = await window.api.getWinners(gameState.gameId);
+        if (winners && winners.length > 0) {
+            const sorted = [...winners].sort((a, b) =>
+                new Date(a.created_at || a.win_time) - new Date(b.created_at || b.win_time));
+            const idx = sorted.findIndex(w => w.cartela_id == cartelaNum);
+            if (idx !== -1) return idx + 1;
+        }
+        return 1;
+    } catch (e) { return 1; }
+}
+
+/* ============================================================ */
+/*  CELEBRATION                                                  */
+/* ============================================================ */
+function celebrate(cartelaNumber, prizeAmount, patterns, rank) {
+    const fw = rank === 1 ? 8 : (rank === 2 ? 5 : 3);
+    const cf = rank === 1 ? 140 : (rank === 2 ? 80 : 50);
+
+    for (let i = 0; i < fw; i++) setTimeout(() => createFireworks(), i * 200);
+    setTimeout(() => createConfetti(cf), 200);
+    setTimeout(() => createConfetti(Math.floor(cf * 0.7)), 700);
+    setTimeout(() => createConfetti(Math.floor(cf * 0.4)), 1400);
+    createSparkles();
+    setTimeout(() => createSparkles(), 500);
+
+    try {
+        const cheer = new Audio('/assets/sounds/cheer.mp3');
+        cheer.volume = 0.5;
+        cheer.play().catch(() => {});
+    } catch (e) {}
+
+    // Play the win sound
+    playSound('win');
+}
+
+function createFireworks() {
+    const colors = ['#ff6b6b', '#feca57', '#48dbfb', '#ff9ff3', '#54a0ff', '#5f27cd', '#ff6348', '#7bed9f', '#FFD700', '#FF8C00'];
+    for (let burst = 0; burst < 6; burst++) {
+        setTimeout(() => {
+            const x = Math.random() * window.innerWidth;
+            const y = Math.random() * window.innerHeight * 0.7;
+            const color = colors[Math.floor(Math.random() * colors.length)];
+            const count = 30 + Math.floor(Math.random() * 30);
+            for (let i = 0; i < count; i++) {
+                const p = document.createElement('div');
+                p.className = 'firework-particle';
+                const angle = (i / count) * Math.PI * 2;
+                const dist = 60 + Math.random() * 120;
+                p.style.cssText = `
+                    position: fixed;
+                    left: ${x}px; top: ${y}px;
+                    width: ${4 + Math.random() * 6}px;
+                    height: ${4 + Math.random() * 6}px;
+                    border-radius: 50%;
+                    background: ${color};
+                    pointer-events: none;
+                    z-index: 9999;
+                    --tx: ${Math.cos(angle) * dist}px;
+                    --ty: ${Math.sin(angle) * dist - 30}px;
+                    animation: firework-burst ${1 + Math.random() * 0.8}s ease-out forwards;
+                    box-shadow: 0 0 6px ${color};
+                `;
+                document.body.appendChild(p);
+                setTimeout(() => p.remove(), 2500);
+            }
+        }, burst * 200);
+    }
+}
+
+function createConfetti(count = 100) {
+    const colors = ['#ff6b6b', '#feca57', '#48dbfb', '#ff9ff3', '#54a0ff', '#5f27cd', '#ff6348', '#7bed9f', '#f9ca24', '#22C55E', '#FFD700', '#FF8C00'];
+    for (let i = 0; i < count; i++) {
+        setTimeout(() => {
+            const p = document.createElement('div');
+            p.className = 'confetti-piece';
+            const color = colors[Math.floor(Math.random() * colors.length)];
+            const size = 6 + Math.random() * 10;
+            const rot = Math.random() * 720 - 360;
+            const dur = 2.5 + Math.random() * 3.5;
+            const left = Math.random() * 100;
+            p.style.cssText = `
+                position: fixed;
+                left: ${left}%; top: -20px;
+                width: ${size}px;
+                height: ${size * 0.7}px;
+                background: ${color};
+                pointer-events: none;
+                z-index: 9999;
+                --rotation: ${rot}deg;
+                animation: confetti-fall ${dur}s linear forwards;
+                border-radius: 2px;
+                transform: rotate(${Math.random() * 360}deg);
+            `;
+            document.body.appendChild(p);
+            setTimeout(() => p.remove(), dur * 1000 + 200);
+        }, i * 20);
+    }
+}
+
+function createSparkles() {
+    for (let i = 0; i < 30; i++) {
+        setTimeout(() => {
+            const s = document.createElement('div');
+            s.className = 'sparkle';
+            const x = Math.random() * window.innerWidth;
+            const y = Math.random() * window.innerHeight;
+            const size = 3 + Math.random() * 6;
+            s.style.cssText = `
+                position: fixed;
+                left: ${x}px; top: ${y}px;
+                width: ${size}px; height: ${size}px;
+                background: white;
+                border-radius: 50%;
+                pointer-events: none;
+                z-index: 9999;
+                box-shadow: 0 0 ${size * 3}px rgba(255,215,0,0.8);
+                animation: sparkle-fade ${0.8 + Math.random() * 0.6}s ease-out forwards;
+            `;
+            document.body.appendChild(s);
+            setTimeout(() => s.remove(), 2000);
+        }, i * 80);
+    }
+}
+
+/* ============================================================ */
+/*  START / PAUSE / BACK / RESET                                 */
+/* ============================================================ */
+async function startGame() {
+    unlockAudio();
+
+    if (gameState.isRunning && !gameState.isPaused) {
+        return showMessage('Game already running', 'warning');
+    }
+    if (!gameState.gameId) {
+        const w = await window.api.getWaitingGame();
+        if (w?.id) gameState.gameId = w.id;
+        else return showMessage('No game available', 'error');
+    }
+
+    const btn = document.getElementById('startBtn');
+    btn.disabled = true;
+    btn.textContent = 'STARTING…';
+
+    numberSoundsUnmutedAt = Date.now() + startSoundDurationMs;
+
+    const startAudio = audioCache['start'];
+    let startSoundPromise = Promise.resolve();
+    if (startAudio) {
+        try {
+            startAudio.pause();
+            startAudio.currentTime = 0;
+            startAudio.volume = 0.9;
+            startSoundPromise = startAudio.play().catch(() => {});
+        } catch (e) {}
+    }
+
+    if (startAudio) {
+        startAudio.addEventListener('ended', () => {
+            numberSoundsUnmutedAt = 0;
+            console.log('🔊 Startup sound finished — number sounds unmuted');
+        }, { once: true });
+    }
+
+    try {
+        const result = await window.api.startGame();
+
+        if (!result?.success) {
+            showMessage(result?.error || 'Failed to start', 'error');
+            btn.disabled = false;
+            btn.textContent = 'START';
+            numberSoundsUnmutedAt = 0;
+            return;
+        }
+
+        gameState.isRunning = true;
+        gameState.isPaused = false;
+        gameState.prizePool = result.prizePool || 0;
+
+        startFirstDrawCountdown();
+        startServerPolling();
+
+        await Promise.all([
+            loadJackpotStatus(),
+            loadSoldCartelas(),
+            loadSettings(),
+            loadCommissionConfig(),
+            startSoundPromise
+        ]);
+
+        if (result.jackpotArmed || gameState.jackpotArmed) {
+            showMessage(`🎰 JACKPOT GAME STARTED! Winner takes ${gameState.jackpotAmount.toFixed(2)} Br extra`, 'jackpot');
+            setTimeout(() => playSound('jackpot'), 100);
+        } else {
+            showMessage(`🎮 Game started! Prize: ${(gameState.displayPrize || gameState.prizePool).toFixed(2)} Br`, 'success');
+        }
+
+        updateJackpotUI();
+        updateBetDisplay();
+        forceFullSync(await window.api.getState());
+        btn.textContent = 'START';
+    } catch (e) {
+        showMessage('Error: ' + e.message, 'error');
+        btn.disabled = false;
+        btn.textContent = 'START';
+        numberSoundsUnmutedAt = 0;
+        stopFirstDrawCountdown();
+    }
+}
+
+async function pauseGame() {
+    if (!gameState.isRunning) return showMessage('Game not running', 'warning');
+    if (isPauseResumeInProgress) return;
+    isPauseResumeInProgress = true;
+
+    // ── Play pause sound immediately, before any network call ──
+    playSound('pause');
+
+    // ── Optimistic UI: flip the pause state and update button instantly ──
+    const wasPaused = gameState.isPaused;
+    gameState.isPaused = !wasPaused;
+    const pauseBtn = document.getElementById('pauseBtn');
+    if (pauseBtn) {
+        if (gameState.isPaused) {
+            pauseBtn.textContent = 'RESUME';
+            pauseBtn.classList.remove('pause');
+            pauseBtn.classList.add('start');
+            stopFirstDrawCountdown();
+        } else {
+            pauseBtn.textContent = 'PAUSE';
+            pauseBtn.classList.add('pause');
+            pauseBtn.classList.remove('start');
+            if (gameState.calledNumbers.length === 0) startFirstDrawCountdown();
+        }
+    }
+
+    try {
+        const result = await window.api.togglePauseGame();
+        if (result?.success) {
+            // Reconcile with server truth (in case the server state differs)
+            const serverPaused = result.isPaused;
+            if (serverPaused !== gameState.isPaused) {
+                gameState.isPaused = serverPaused;
+                if (pauseBtn) {
+                    if (serverPaused) {
+                        pauseBtn.textContent = 'RESUME';
+                        pauseBtn.classList.remove('pause');
+                        pauseBtn.classList.add('start');
+                        stopFirstDrawCountdown();
+                    } else {
+                        pauseBtn.textContent = 'PAUSE';
+                        pauseBtn.classList.add('pause');
+                        pauseBtn.classList.remove('start');
+                        if (gameState.calledNumbers.length === 0) startFirstDrawCountdown();
+                    }
+                }
+            }
+            showMessage(gameState.isPaused ? 'Game paused' : 'Game resumed',
+                gameState.isPaused ? 'warning' : 'success');
+            updateJackpotUI();
+        } else {
+            // Revert on failure
+            gameState.isPaused = wasPaused;
+            if (pauseBtn) {
+                if (wasPaused) {
+                    pauseBtn.textContent = 'RESUME';
+                    pauseBtn.classList.remove('pause');
+                    pauseBtn.classList.add('start');
+                } else {
+                    pauseBtn.textContent = 'PAUSE';
+                    pauseBtn.classList.add('pause');
+                    pauseBtn.classList.remove('start');
+                }
+            }
+            showMessage(result?.error || 'Failed to toggle pause', 'error');
+        }
+    } catch (e) {
+        // Revert on error
+        gameState.isPaused = wasPaused;
+        if (pauseBtn) {
+            if (wasPaused) {
+                pauseBtn.textContent = 'RESUME';
+                pauseBtn.classList.remove('pause');
+                pauseBtn.classList.add('start');
+            } else {
+                pauseBtn.textContent = 'PAUSE';
+                pauseBtn.classList.add('pause');
+                pauseBtn.classList.remove('start');
+            }
+        }
+        showMessage('Error toggling pause', 'error');
+    } finally {
+        isPauseResumeInProgress = false;
+    }
+}
+
+function backToRegister() {
+    if (gameState.isRunning && !gameState.isPaused) {
+        return showMessage('Game is running — cannot go back now', 'warning');
+    }
+    if (gameState.isPaused) {
+        return showMessage('Game is paused — resume or reset first', 'warning');
+    }
+
+    stopFirstDrawCountdown();
+    stopServerPolling();
+    showMessage('Returning to card selection…', 'info');
+    setTimeout(() => { window.location.href = '/register.html'; }, 250);
+}
+
+async function resetAndReturnToRegister() {
+    if (!confirm('Reset the game and return to the Card Selection page?')) return;
+    const btn = document.getElementById('newGameBtn');
+    btn.disabled = true;
+    stopFirstDrawCountdown();
+    stopServerPolling();
+    try {
+        if (gameState.isRunning && gameState.gameId) {
+            await window.api.pauseGame();
+            await window.api.finishGame(gameState.gameId, 'Reset from game room');
+            gameState.isRunning = false;
+            gameState.isPaused = false;
+        }
+    } catch (e) {
+        console.error('Reset error:', e);
+    }
+    window.location.href = '/register.html';
+}
+
+/* ============================================================ */
+/*  MODAL (hidden)                                               */
+/* ============================================================ */
+function closeCartelaModal() {
+    document.getElementById('cartelaModal').classList.remove('show');
+}
+
+async function disqualifyTicketModal() {
+    const ticketNum = document.getElementById('modalTitle').textContent.replace('Cartela #', '');
+    if (!confirm(`Disqualify cartela #${ticketNum}?`)) return;
+    try {
+        const result = await window.api.disqualifyTicket(parseInt(ticketNum));
+        if (result?.success) {
+            playSound('disqualify');
+            showMessage(`Cartela #${ticketNum} disqualified`, 'warning');
+            closeCartelaModal();
+        }
+    } catch (e) {
+        showMessage('Error disqualifying', 'error');
+    }
+}
+
+/* ============================================================ */
+/*  SHUFFLE — huge shuffle area, big balls                       */
+/* ============================================================ */
+let shuffleAnim = {
+    running: false,
+    rafId: null,
+    balls: [],
+    fadeTimer: null,
+    endTimer: null
+};
+
+function runShuffleAnimation() {
+    if (shuffleAnim.running) return;
+
+    const overlay = document.getElementById('shuffleOverlay');
+    const circle = document.getElementById('shuffleCircle');
+    if (!overlay || !circle) return;
+
+    Array.from(circle.querySelectorAll('.shuffle-ball')).forEach(el => el.remove());
+    shuffleAnim.balls = [];
+
+    overlay.style.display = 'flex';
+    void overlay.offsetWidth;
+    overlay.classList.remove('fading');
+    overlay.classList.add('show');
+
+    shuffleAnim.running = true;
+
+    const circleRect = circle.getBoundingClientRect();
+    const W = circleRect.width;
+    const H = circleRect.height;
+    const cx = W / 2;
+    const cy = H / 2;
+
+    const usableRadius = Math.min(cx, cy) - 6;
+    const idealBallArea = (Math.PI * usableRadius * usableRadius) / 75;
+    const idealBallDiam = Math.sqrt(idealBallArea / Math.PI) * 2;
+    const ballSize = Math.max(60, Math.round(idealBallDiam * 0.95));
+    const half = ballSize / 2;
+
+    const maxDist = usableRadius - half;
+
+    const GOLDEN = Math.PI * (3 - Math.sqrt(5));
+    const ballCount = 75;
+
+    for (let i = 0; i < ballCount; i++) {
+        const num = i + 1;
+        const el = document.createElement('div');
+        el.className = 'shuffle-ball';
+        el.style.width = ballSize + 'px';
+        el.style.height = ballSize + 'px';
+        el.style.fontSize = Math.round(ballSize * 0.4) + 'px';
+        el.textContent = num;
+
+        const t = (i + 0.5) / ballCount;
+        const r = Math.sqrt(t) * maxDist;
+        const a = i * GOLDEN;
+
+        const px = cx + Math.cos(a) * r;
+        const py = cy + Math.sin(a) * r;
+
+        el.style.transform = `translate3d(${px - half}px, ${py - half}px, 0)`;
+        circle.appendChild(el);
+
+        shuffleAnim.balls.push({
+            el,
+            num,
+            x: px, y: py,
+            vx: 0, vy: 0,
+            phase: Math.random() * Math.PI * 2,
+            turbAmp: 0.9 + Math.random() * 1.2,
+            turbFreq: 3.0 + Math.random() * 2.5
+        });
+    }
+
+    const step = () => {
+        if (!shuffleAnim.running) return;
+
+        const balls = shuffleAnim.balls;
+        const time = performance.now() / 1000;
+
+        for (const b of balls) {
+            const ax = Math.sin(time * b.turbFreq + b.phase) * b.turbAmp
+                     + Math.cos(time * (b.turbFreq * 1.7) + b.phase * 2.3) * b.turbAmp * 0.7;
+            const ay = Math.cos(time * (b.turbFreq * 0.9) + b.phase * 1.4) * b.turbAmp
+                     + Math.sin(time * (b.turbFreq * 1.3) + b.phase * 0.8) * b.turbAmp * 0.7;
+
+            const rx = (Math.random() - 0.5) * 1.4;
+            const ry = (Math.random() - 0.5) * 1.4;
+
+            b.vx += ax + rx;
+            b.vy += ay + ry;
+
+            b.vx *= 0.94;
+            b.vy *= 0.94;
+
+            const sp = Math.hypot(b.vx, b.vy);
+            const MIN_SPD = 2.5;
+            const MAX_SPD = 11.0;
+            if (sp < MIN_SPD) {
+                const k = MIN_SPD / (sp || 0.001);
+                b.vx *= k; b.vy *= k;
+            } else if (sp > MAX_SPD) {
+                const k = MAX_SPD / sp;
+                b.vx *= k; b.vy *= k;
+            }
+
+            b.x += b.vx;
+            b.y += b.vy;
+        }
+
+        for (let i = 0; i < balls.length; i++) {
+            const A = balls[i];
+            for (let j = i + 1; j < balls.length; j++) {
+                const B = balls[j];
+                const dx = B.x - A.x;
+                const dy = B.y - A.y;
+                const minD = ballSize;
+                const d2 = dx * dx + dy * dy;
+                if (d2 > 0 && d2 < minD * minD) {
+                    const d = Math.sqrt(d2);
+                    const nx = dx / d;
+                    const ny = dy / d;
+
+                    const overlap = (minD - d) * 0.5;
+                    A.x -= nx * overlap;
+                    A.y -= ny * overlap;
+                    B.x += nx * overlap;
+                    B.y += ny * overlap;
+
+                    const av = A.vx * nx + A.vy * ny;
+                    const bv = B.vx * nx + B.vy * ny;
+                    const diff = (bv - av) * 0.6;
+                    A.vx += diff * nx; A.vy += diff * ny;
+                    B.vx -= diff * nx; B.vy -= diff * ny;
+                }
+            }
+        }
+
+        for (const b of balls) {
+            const dx = b.x - cx;
+            const dy = b.y - cy;
+            const dist = Math.hypot(dx, dy) || 0.001;
+            if (dist > maxDist) {
+                const nx = dx / dist;
+                const ny = dy / dist;
+
+                const dot = b.vx * nx + b.vy * ny;
+                b.vx -= 1.6 * dot * nx;
+                b.vy -= 1.6 * dot * ny;
+
+                const overlap = dist - maxDist;
+                b.x -= nx * overlap;
+                b.y -= ny * overlap;
+            }
+        }
+
+        for (const b of balls) {
+            b.el.style.transform = `translate3d(${b.x - half}px, ${b.y - half}px, 0)`;
+        }
+
+        shuffleAnim.rafId = requestAnimationFrame(step);
+    };
+
+    step();
+
+    shuffleAnim.fadeTimer = setTimeout(() => {
+        overlay.classList.add('fading');
+    }, 3000);
+
+    shuffleAnim.endTimer = setTimeout(() => {
+        stopShuffleAnimation();
+    }, 3600);
+}
+
+function stopShuffleAnimation() {
+    if (shuffleAnim.rafId) cancelAnimationFrame(shuffleAnim.rafId);
+    if (shuffleAnim.fadeTimer) clearTimeout(shuffleAnim.fadeTimer);
+    if (shuffleAnim.endTimer) clearTimeout(shuffleAnim.endTimer);
+    shuffleAnim.rafId = null;
+    shuffleAnim.fadeTimer = null;
+    shuffleAnim.endTimer = null;
+    shuffleAnim.running = false;
+
+    const overlay = document.getElementById('shuffleOverlay');
+    const circle = document.getElementById('shuffleCircle');
+    if (overlay) {
+        overlay.classList.remove('show', 'fading');
+        overlay.style.display = 'none';
+    }
+    if (circle) {
+        Array.from(circle.querySelectorAll('.shuffle-ball')).forEach(el => el.remove());
+    }
+    shuffleAnim.balls = [];
+}
+
+async function manualShuffle() {
+    if (gameState.isShuffling) return showMessage('Shuffle in progress', 'warning');
+    if (gameState.isRunning) return showMessage('Cannot shuffle while running', 'error');
+
+    unlockAudio(); // Ensure audio context is ready if user clicks shuffle first
+
+    showMessage('🎲 Shuffling…', 'info');
+    gameState.isShuffling = true;
+    const btn = document.getElementById('shuffleBtn');
+    btn.disabled = true;
+
+    const audio = audioCache['shuffle'];
+    try {
+        if (audio) {
+            audio.pause();
+            audio.currentTime = 0;
+            audio.loop = true;
+            audio.volume = 0.5;
+            audio.play().catch((e) => console.log('Audio play failed:', e));
+        }
+
+        runShuffleAnimation();
+        await new Promise(r => setTimeout(r, 3600));
+
+        if (audio) { audio.pause(); audio.currentTime = 0; audio.loop = false; }
+    } catch (e) {
+        if (audio) { audio.pause(); audio.loop = false; }
+    } finally {
+        stopShuffleAnimation();
+        gameState.isShuffling = false;
+        btn.disabled = false;
+    }
+}
+
+/* ============================================================ */
+/*  FULLSCREEN                                                   */
+/* ============================================================ */
+function toggleFullscreen() {
+    const el = document.documentElement;
+    const btn = document.getElementById('fullscreenBtn');
+    if (!document.fullscreenElement) {
+        (el.requestFullscreen || el.webkitRequestFullscreen || el.msRequestFullscreen)?.call(el);
+        if (btn) btn.textContent = 'Exit Fullscreen';
+    } else {
+        (document.exitFullscreen || document.webkitExitFullscreen || document.msExitFullscreen)?.call(document);
+        if (btn) btn.textContent = 'Go Fullscreen';
+    }
+}
+
+document.addEventListener('fullscreenchange', () => {
+    const btn = document.getElementById('fullscreenBtn');
+    if (btn) btn.textContent = document.fullscreenElement ? 'Exit Fullscreen' : 'Go Fullscreen';
+});
+
+/* ============================================================ */
+/*  SOCKET EVENTS                                                */
+/* ============================================================ */
+function setupEventListeners() {
+    // Connection health: tell the cashier, then catch up on anything missed while offline
+    let lastWeakNotice = 0;
+    window.addEventListener('bingo-socket-down', () => {
+        if (Date.now() - lastWeakNotice < 15000) return;
+        lastWeakNotice = Date.now();
+        showMessage('⚠️ Weak connection — reconnecting…', 'warning');
+    });
+    window.addEventListener('bingo-socket-up', async (e) => {
+        if (!e.detail?.recovered) return;
+        try {
+            const s = await window.api.getState();
+            if (s) forceFullSync(s);
+        } catch (err) {}
+        showMessage('Connection restored', 'success');
+    });
+
+    if (window.api.onGameStateChanged) {
+        window.api.onGameStateChanged((state) => forceFullSync(state));
+    }
+    if (window.api.onNumberCalled) {
+        window.api.onNumberCalled((number) => {
+            // Instantly show the number the moment the socket fires
+            showNumberInstant(number);
+            stopFirstDrawCountdown();
+        });
+    }
+    if (window.api.onGameEnded) {
+        window.api.onGameEnded(() => {
+            showMessage('Game ended', 'info');
+            stopFirstDrawCountdown();
+            // FIXED: do NOT stop the poll here — it's the safety net for any tab
+            // that didn't start this game (e.g. next game started from register.html).
+            // It's only ever restarted by startGame() in the same tab.
+            loadJackpotStatus();
+        });
+    }
+    if (window.api.onJackpotChanged) {
+        window.api.onJackpotChanged((data) => {
+            if (!data) return;
+            gameState.jackpotEnabled = data.enabled === true;
+            gameState.jackpotAmount = data.amount ?? gameState.jackpotAmount;
+            gameState.jackpotArmed = data.armed ?? gameState.jackpotArmed;
+            gameState.jackpotCounter = data.gamesCounter ?? gameState.jackpotCounter;
+            gameState.jackpotRequired = data.gamesRequired ?? gameState.jackpotRequired;
+            gameState.jackpotContributionPct = data.contributionPct ?? gameState.jackpotContributionPct;
+            updateJackpotUI();
+
+            if (data.armedThisGame) {
+                showMessage(`🎰 JACKPOT ARMED — next game is a JACKPOT GAME!`, 'jackpot');
+                playSound('jackpot');
+            } else if (data.wonThisGame && data.wonAmount) {
+                showMessage(`🎰💰 JACKPOT WON! ${data.wonAmount.toFixed(2)} Br paid out`, 'jackpot');
+            }
+        });
+    }
+}
+
+/* ============================================================ */
+/*  WIRE BUTTONS                                                 */
+/* ============================================================ */
+document.getElementById('startBtn').onclick = startGame;
+document.getElementById('pauseBtn').onclick = pauseGame;
+document.getElementById('newGameBtn').onclick = resetAndReturnToRegister;
+document.getElementById('backBtn').onclick = backToRegister;
+document.getElementById('shuffleBtn').onclick = manualShuffle;
+document.getElementById('quickCheckBtn').onclick = onCheckButtonClick;
+document.getElementById('checkBtn').onclick = openCheckDialog;
+document.getElementById('checkDialogClose').onclick = closeCheckDialog;
+document.getElementById('fullscreenBtn').onclick = toggleFullscreen;
+document.getElementById('modalDisqualifyBtn').onclick = disqualifyTicketModal;
+
+document.getElementById('cartelaInput').addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') onCheckButtonClick();
+});
+
+document.getElementById('cartelaInput').addEventListener('change', (e) => {
+    resetCheckButtonState();
+    previewCartela(parseInt(e.target.value) || null);
+});
+
+// When the user types into the cartela input, always reset the check
+// button to CHECK mode so they can check a new card.
+document.getElementById('cartelaInput').addEventListener('input', () => {
+    if (gameState.pendingLockCardId !== null) {
+        resetCheckButtonState();
+    }
+});
+
+document.getElementById('cartelaModal').onclick = (e) => {
+    if (e.target === document.getElementById('cartelaModal')) closeCartelaModal();
+};
+
+/* ============================================================ */
+/*  AUTO SHUFFLE ON LOAD                                         */
+/* ============================================================ */
+async function autoShuffleOnLoad() {
+    gameState.isShuffling = true;
+    const audio = audioCache['shuffle'];
+    try {
+        if (audio) {
+            audio.pause(); // Ensure it's stopped
+            audio.currentTime = 0;
+            audio.loop = true;
+            audio.volume = 0.5;
+            audio.play().catch((e) => console.log('Audio play failed:', e));
+        }
+
+        runShuffleAnimation();
+        // Wait for the animation to complete (3.6 seconds)
+        await new Promise(r => setTimeout(r, 3600));
+
+        if (audio) { audio.pause(); audio.currentTime = 0; audio.loop = false; }
+    } catch (e) {
+        if (audio) { audio.pause(); audio.loop = false; }
+    } finally {
+        stopShuffleAnimation();
+        gameState.isShuffling = false;
+    }
+}
+
+/* ============================================================ */
+/*  INIT                                                         */
+/* ============================================================ */
+(async function init() {
+    // 1. Kick off the auto-shuffle immediately (background)
+    autoShuffleOnLoad();
+
+    // 2. Load everything behind the shuffle overlay
+    const ok = await verifySession();
+    if (!ok) return;
+
+    preloadAudioFiles();
+    await loadSettings();
+    await loadCommissionConfig();
+    updateBetDisplay();
+    updatePrizeDisplay();
+    
+    // 3. Fetch and paint the authoritative state
+    await loadGameData();
+    await updateWalletBalance();
+    setupEventListeners();
+
+    // 4. If the game is running, pause it silently so the state is inactive on reload
+    // FIXED: use the idempotent pauseGame endpoint — togglePauseGame could RESUME
+    // a game if local state was stale (e.g. two screens loading, or racing an
+    // admin's manual pause), flipping a paused game back to running.
+    if (gameState.isRunning && !gameState.isPaused) {
+        try {
+            await window.api.pauseGame();
+            gameState.isPaused = true;
+        } catch (e) {
+            console.error('Failed to auto-pause on reload:', e);
+        }
+    }
+
+    // Start continuous server sync
+    startServerPolling();
+
+    setCheckButtonMode('check');
+    previewCartela(null);
+    updateJackpotUI();
+    updateBetDisplay();
+
+    // Attach audio unlocker to the first user click anywhere on the page
+    document.addEventListener('click', unlockAudio, { once: true });
+    document.addEventListener('touchstart', unlockAudio, { once: true });
+
+    showMessage('Welcome to Bingo', 'success');
+})();
+</script>
+
+</body>
+</html>

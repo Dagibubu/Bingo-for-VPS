@@ -1,0 +1,1845 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="utf-8">
+    
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>VIP BINGO — Card Selection</title>
+    <script src="/js/api.js?v=20261101"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Noto+Sans+Ethiopic:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --brand-red: #e52f32;
+            --page-bg: #f0f1f7;
+            --panel-bg: #ffffff;
+            --purple: #5146b5;
+            --purple-dark: #3d3494;
+            --purple-light: #6550ed;
+
+            --circle-border: #2a1d5c;
+            --circle-bg: #ffffff;
+            --circle-color: #2a1d5c;
+
+            --minus: #ef4444;
+            --value-orange: #ff8b49;
+            --plus: #3498f5;
+
+            --text: #111111;
+            --text-muted: #6c757d;
+            --border-light: #dee2e6;
+            --green: #22b573;
+
+            --anim-yellow: #facc15;
+            --anim-yellow-deep: #f59e0b;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        html, body { height: 100%; }
+
+        body {
+            font-family: 'Inter', 'Noto Sans Ethiopic', 'Arial', sans-serif;
+            background: var(--page-bg);
+            color: var(--text);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow-x: hidden;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* ============================================================
+           TOP HEADER  (69px, red brand on left)
+        ============================================================ */
+        .app-header {
+            height: 69px;
+            display: flex;
+            align-items: stretch;
+            background: #ffffff;
+            border-bottom: 1px solid var(--border-light);
+            flex-shrink: 0;
+        }
+
+        .brand-block {
+            width: 269px;
+            flex-shrink: 0;
+            background: var(--brand-red);
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            padding: 0 22px;
+            color: white;
+        }
+
+        .hamburger {
+            width: 22px;
+            height: 18px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            cursor: pointer;
+            flex-shrink: 0;
+        }
+        .hamburger span {
+            display: block;
+            height: 2.5px;
+            background: white;
+            border-radius: 2px;
+        }
+
+        .brand-text {
+            font-size: 16px;
+            font-weight: 800;
+            letter-spacing: 1.2px;
+            text-transform: uppercase;
+            white-space: nowrap;
+        }
+
+        .brand-logo {
+            width: 30px;
+            height: 30px;
+            margin-left: auto;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.2);
+            border: 2px solid white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            flex-shrink: 0;
+        }
+
+        .toolbar {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            gap: 24px;
+            padding: 0 28px;
+        }
+
+        .datetime {
+            font-size: 16px;
+            font-weight: 700;
+            color: #212529;
+            white-space: nowrap;
+        }
+
+        .color-label {
+            font-size: 15px;
+            font-weight: 500;
+            color: #495057;
+            margin-right: 2px;
+        }
+
+        .color-swatch-wrap {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .color-swatch {
+            width: 34px;
+            height: 34px;
+            border-radius: 50%;
+            background: var(--purple);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 700;
+            font-size: 13px;
+            cursor: pointer;
+            border: none;
+        }
+
+        .toolbar-spacer { flex: 1; }
+
+        .profile-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 6px;
+            background: #f1f3f5;
+            border: 1px solid var(--border-light);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 18px;
+            font-weight: 700;
+            color: #495057;
+            flex-shrink: 0;
+        }
+        .profile-icon:hover { background: #e9ecef; }
+
+        /* ============================================================
+           PAGE CONTENT
+        ============================================================ */
+        .page-content {
+            flex: 1;
+            padding: 18px 40px 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            min-height: 0;
+        }
+
+        /* "SELECT CARD" heading bar */
+        .select-card-panel {
+            background: #ffffff;
+            border: 1px solid var(--border-light);
+            border-radius: 4px;
+            padding: 16px 20px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 15px;
+            font-weight: 800;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            color: #2a1d5c;
+            border-bottom: 3px solid #168cff;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+        }
+        .select-card-panel svg {
+            width: 20px;
+            height: 20px;
+            color: #2a1d5c;
+            flex-shrink: 0;
+        }
+
+        /* ============================================================
+           NUMBER GRID — black bordered, scrollable
+        ============================================================ */
+        .grid-outer {
+            flex: 1;
+            min-height: 0;
+            background: #ffffff;
+            border: 3px solid #111;
+            border-radius: 5px;
+            padding: 14px;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+        }
+
+        .grid-scroll {
+            flex: 1;
+            min-height: 0;
+            overflow-y: auto;
+            overflow-x: hidden;
+            padding-right: 10px;
+        }
+
+        .grid-scroll::-webkit-scrollbar { width: 14px; }
+        .grid-scroll::-webkit-scrollbar-track {
+            background: #e9ecef;
+            border-radius: 7px;
+        }
+        .grid-scroll::-webkit-scrollbar-thumb {
+            background: #868e96;
+            border-radius: 7px;
+            border: 3px solid #e9ecef;
+        }
+        .grid-scroll::-webkit-scrollbar-thumb:hover {
+            background: #495057;
+        }
+
+        /* 15 columns regardless of card count */
+        .number-grid {
+            display: grid;
+            grid-template-columns: repeat(15, minmax(0, 1fr));
+            gap: 14px 12px;
+            justify-items: center;
+            padding: 8px 4px;
+        }
+
+        .number-btn {
+            position: relative;
+            width: 68px;
+            height: 68px;
+            max-width: 100%;
+            aspect-ratio: 1 / 1;
+            border: 2.5px solid var(--circle-border);
+            border-radius: 50%;
+            background: var(--circle-bg);
+            color: var(--circle-color);
+            font-family: inherit;
+            font-size: 26px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            box-shadow: 3px 4px 8px rgba(0,0,0,0.18);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0;
+            line-height: 1;
+            user-select: none;
+        }
+
+        .number-btn:hover:not(:disabled):not(.sold) {
+            transform: translateY(-2px);
+            box-shadow: 4px 7px 14px rgba(0,0,0,0.28);
+        }
+        .number-btn:active:not(:disabled):not(.sold) {
+            transform: translateY(0);
+            box-shadow: 2px 2px 5px rgba(0,0,0,0.2);
+        }
+
+        .number-btn.selected {
+            background: linear-gradient(135deg, #ffb43a, #f59e0b);
+            color: white;
+            border-color: #e8743a;
+            box-shadow: 4px 6px 14px rgba(255,139,73,0.5);
+        }
+
+        .number-btn.sold {
+            background: #d8dae0;
+            color: #a0a4b8;
+            border-color: #a0a4b8;
+            cursor: not-allowed;
+            text-decoration: line-through;
+            box-shadow: 1px 2px 4px rgba(0,0,0,0.1);
+            opacity: 0.75;
+        }
+
+        .number-btn.refunded {
+            background: #eef0f5;
+            color: #b0b4c4;
+            border-color: #b0b4c4;
+            cursor: not-allowed;
+            text-decoration: line-through;
+            box-shadow: none;
+        }
+
+        /* ============================================================
+           YELLOW CIRCLE + PURPLE NUMBER ZOOM ANIMATION
+        ============================================================ */
+        .zoom-ring {
+            position: fixed;
+            pointer-events: none;
+            border-radius: 50%;
+            border: 8px solid var(--anim-yellow);
+            background: radial-gradient(circle, #facc15 0%, #f59e0b 100%);
+            box-shadow:
+                0 0 60px rgba(250,204,21,1),
+                0 0 120px rgba(250,204,21,0.75),
+                0 0 0 12px rgba(250,204,21,0.25),
+                inset 0 0 50px rgba(255,255,255,0.35);
+            z-index: 9000;
+            transform: translate(-50%, -50%) scale(0.5);
+            opacity: 0;
+            animation: zoomRing 0.75s cubic-bezier(0.22, 0.61, 0.36, 1) forwards;
+        }
+
+        @keyframes zoomRing {
+            0% {
+                transform: translate(-50%, -50%) scale(0.5);
+                opacity: 1;
+            }
+            40% {
+                transform: translate(-50%, -50%) scale(1.6);
+                opacity: 0.95;
+            }
+            100% {
+                transform: translate(-50%, -50%) scale(3.2);
+                opacity: 0;
+            }
+        }
+
+        .zoom-number {
+            position: fixed;
+            pointer-events: none;
+            font-family: 'Inter', sans-serif;
+            font-weight: 900;
+            color: #2a1d5c;
+            letter-spacing: -0.03em;
+            text-shadow:
+                0 0 12px rgba(255,255,255,0.9),
+                0 0 28px rgba(255,255,255,0.6),
+                0 6px 14px rgba(0,0,0,0.25);
+            z-index: 9001;
+            transform: translate(-50%, -50%) scale(0.5);
+            opacity: 0;
+            animation: zoomNumber 0.85s cubic-bezier(0.22, 0.61, 0.36, 1) forwards;
+            white-space: nowrap;
+        }
+
+        @keyframes zoomNumber {
+            0% {
+                transform: translate(-50%, -50%) scale(0.4);
+                opacity: 0;
+            }
+            25% {
+                transform: translate(-50%, -50%) scale(1.25);
+                opacity: 1;
+            }
+            55% {
+                transform: translate(-50%, -50%) scale(1.15);
+                opacity: 1;
+            }
+            100% {
+                transform: translate(-50%, -50%) scale(2.6);
+                opacity: 0;
+            }
+        }
+
+        /* ============================================================
+           CONTROL ROW (below the grid)
+        ============================================================ */
+        .control-row {
+            display: flex;
+            align-items: flex-end;
+            gap: 22px;
+            flex-wrap: wrap;
+            padding: 2px 20px 4px;
+            justify-content: center;
+        }
+
+        .action-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .action-btn {
+            padding: 12px 22px;
+            border: none;
+            border-radius: 5px;
+            background: linear-gradient(135deg, #6550ed, #7b4a9c);
+            color: white;
+            font-family: inherit;
+            font-weight: 700;
+            font-size: 14px;
+            cursor: pointer;
+            box-shadow: 0 4px 10px rgba(91,57,152,0.35);
+            transition: transform 0.12s, box-shadow 0.15s;
+            white-space: nowrap;
+            min-width: 100px;
+        }
+        .action-btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 14px rgba(91,57,152,0.45);
+        }
+        .action-btn:disabled {
+            opacity: 0.55;
+            cursor: not-allowed;
+        }
+        .stepper-group.locked .stepper button,
+        .stepper-group.locked .stepper input { pointer-events: none; opacity: 0.6; }
+        .action-btn.reset-btn {
+            background: linear-gradient(135deg, #ef4444, #b91c1c);
+            box-shadow: 0 4px 10px rgba(185,28,28,0.35);
+        }
+        .action-btn.reset-btn:hover:not(:disabled) { box-shadow: 0 6px 14px rgba(185,28,28,0.45); }
+
+        .stepper-group {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .stepper-label {
+            font-size: 13px;
+            font-weight: 700;
+            color: #212529;
+            text-decoration: underline;
+            text-underline-offset: 3px;
+            margin-bottom: 2px;
+            min-height: 16px;
+            letter-spacing: 0.3px;
+        }
+
+        .stepper {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .stepper button {
+            width: 36px;
+            height: 36px;
+            border: none;
+            border-radius: 6px;
+            color: white;
+            font-family: inherit;
+            font-size: 20px;
+            font-weight: 800;
+            cursor: pointer;
+            transition: transform 0.12s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0;
+            line-height: 1;
+        }
+        .stepper button:hover:not(:disabled) { transform: scale(1.05); }
+        .stepper button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        .stepper .minus {
+            background: var(--minus);
+            box-shadow: 0 3px 8px rgba(239,68,68,0.35);
+        }
+        .stepper .plus {
+            background: var(--plus);
+            box-shadow: 0 3px 8px rgba(52,152,245,0.35);
+        }
+
+        .stepper .value {
+            min-width: 46px;
+            height: 36px;
+            background: var(--value-orange);
+            color: white;
+            font-family: inherit;
+            font-weight: 800;
+            font-size: 16px;
+            border: none;
+            border-radius: 6px;
+            box-shadow: 0 3px 8px rgba(255,139,73,0.35);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0 6px;
+        }
+
+        /* BET value is a typeable box */
+        .stepper input.value {
+            width: 64px;
+            text-align: center;
+            outline: none;
+            -moz-appearance: textfield;
+        }
+        .stepper input.value::-webkit-outer-spin-button,
+        .stepper input.value::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+        .stepper input.value:focus { box-shadow: 0 0 0 2px #ffffff, 0 0 0 4px var(--value-orange); }
+
+        .stepper-group.zig-group .stepper .value {
+            background: linear-gradient(135deg, #10b981, #059669);
+            box-shadow: 0 3px 8px rgba(16,185,129,0.4);
+        }
+        .stepper-group.zig-group .stepper-label {
+            color: #065f46;
+        }
+
+        .right-group {
+            display: flex;
+            align-items: flex-end;
+            gap: 14px;
+            flex-wrap: wrap;
+        }
+
+        .play-btn {
+            padding: 12px 30px;
+            border: none;
+            border-radius: 5px;
+            background: linear-gradient(135deg, #6550ed, #852a91);
+            color: white;
+            font-family: inherit;
+            font-weight: 800;
+            font-size: 15px;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(101,80,237,0.4);
+            transition: transform 0.12s, box-shadow 0.15s;
+            white-space: nowrap;
+            min-width: 90px;
+        }
+        .play-btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(101,80,237,0.55);
+        }
+        .play-btn:disabled {
+            background: #cbd5e1;
+            cursor: not-allowed;
+            box-shadow: none;
+        }
+
+        .fullscreen-btn {
+            padding: 12px 22px;
+            border: none;
+            border-radius: 5px;
+            background: linear-gradient(135deg, #6550ed, #5146b5);
+            color: white;
+            font-family: inherit;
+            font-weight: 700;
+            font-size: 14px;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(101,80,237,0.4);
+            transition: transform 0.12s, box-shadow 0.15s;
+            white-space: nowrap;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .fullscreen-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(101,80,237,0.55);
+        }
+
+        /* ============================================================
+           STATUS BAR
+        ============================================================ */
+        .status-bar {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 16px;
+            padding: 0 20px;
+            flex-wrap: wrap;
+        }
+
+        .game-status {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 600;
+            background: #fff3cd;
+            color: #856404;
+        }
+        .game-status.ready { background: #d4edda; color: #155724; }
+        .game-status.running { background: #f8d7da; color: #721c24; }
+        .game-status.error { background: #f8d7da; color: #721c24; }
+
+        /* ============================================================
+           TOASTS
+        ============================================================ */
+        .toast-area {
+            position: fixed;
+            bottom: 24px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 3000;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            align-items: center;
+            pointer-events: none;
+        }
+        .toast {
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-weight: 700;
+            font-size: 14px;
+            color: white;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.25);
+            pointer-events: auto;
+            max-width: 90vw;
+            white-space: nowrap;
+            animation: toastIn 0.28s ease;
+        }
+        .toast.info { background: #3498f5; }
+        .toast.success { background: var(--green); }
+        .toast.warning { background: var(--value-orange); }
+        .toast.error { background: var(--minus); }
+
+        @keyframes toastIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* ============================================================
+           ENTER CARD DIALOG
+        ============================================================ */
+        .enter-card-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
+            z-index: 5000;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: opacity 0.2s ease;
+        }
+        .enter-card-overlay.show {
+            display: flex;
+            opacity: 1;
+        }
+
+        .enter-card-dialog {
+            background: #ffffff;
+            border-radius: 12px;
+            padding: 28px;
+            width: 380px;
+            max-width: 90vw;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            transform: scale(0.95);
+            transition: transform 0.2s cubic-bezier(0.22, 0.61, 0.36, 1);
+        }
+        .enter-card-overlay.show .enter-card-dialog {
+            transform: scale(1);
+        }
+
+        .enter-card-title {
+            font-size: 20px;
+            font-weight: 800;
+            color: var(--purple);
+            margin-bottom: 6px;
+            text-align: center;
+        }
+        .enter-card-subtitle {
+            font-size: 13px;
+            color: var(--text-muted);
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .enter-card-input {
+            width: 100%;
+            height: 56px;
+            font-size: 28px;
+            font-weight: 800;
+            text-align: center;
+            color: var(--purple);
+            background: #f8f9fa;
+            border: 2px solid var(--border-light);
+            border-radius: 8px;
+            outline: none;
+            font-family: inherit;
+            transition: border-color 0.15s;
+        }
+        .enter-card-input:focus {
+            border-color: var(--purple);
+            background: #ffffff;
+        }
+        .enter-card-input.error {
+            border-color: var(--minus);
+            animation: shake 0.3s ease;
+        }
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-6px); }
+            75% { transform: translateX(6px); }
+        }
+
+        .enter-card-feedback {
+            min-height: 22px;
+            margin-top: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            text-align: center;
+        }
+        .enter-card-feedback.success { color: var(--green); }
+        .enter-card-feedback.error { color: var(--minus); }
+
+        .enter-card-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        .enter-card-actions button {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            font-family: inherit;
+            font-weight: 700;
+            font-size: 14px;
+            cursor: pointer;
+            transition: transform 0.1s, filter 0.15s;
+        }
+        .enter-card-actions button:hover {
+            filter: brightness(1.08);
+            transform: translateY(-1px);
+        }
+        .enter-card-actions .cancel-btn {
+            background: #e9ecef;
+            color: var(--text);
+        }
+        .enter-card-actions .add-btn {
+            background: linear-gradient(135deg, #6550ed, #852a91);
+            color: white;
+            box-shadow: 0 4px 10px rgba(101,80,237,0.35);
+        }
+        .enter-card-actions .add-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* Compact white box at the top of the screen, like a browser prompt,
+           and always light regardless of the browser's theme */
+        .enter-card-overlay {
+            background: transparent;
+            backdrop-filter: none;
+            -webkit-backdrop-filter: none;
+            align-items: flex-start;
+            padding-top: 12px;
+        }
+        .enter-card-dialog {
+            color-scheme: light;
+            color: #111111;
+            width: 448px;
+            max-width: calc(100vw - 24px);
+            padding: 20px 24px 18px;
+            border-radius: 8px;
+            box-shadow: 0 8px 28px rgba(0,0,0,0.35);
+        }
+        .enter-card-title {
+            font-size: 15px;
+            font-weight: 600;
+            color: #111111;
+            text-align: left;
+            margin-bottom: 2px;
+        }
+        .enter-card-subtitle {
+            text-align: left;
+            margin-bottom: 12px;
+        }
+        .enter-card-input {
+            height: 36px;
+            font-size: 16px;
+            font-weight: 600;
+            text-align: left;
+            padding: 0 10px;
+            color: #111111;
+            background: #ffffff;
+            border: 1px solid #c4c4c4;
+            border-radius: 4px;
+        }
+        .enter-card-feedback { text-align: left; min-height: 18px; margin-top: 6px; }
+        .enter-card-actions {
+            justify-content: flex-end;
+            gap: 8px;
+            margin-top: 8px;
+        }
+        .enter-card-actions button {
+            flex: 0 0 auto;
+            min-width: 76px;
+            padding: 8px 16px;
+            border-radius: 17px;
+            font-weight: 600;
+        }
+
+        /* ============================================================
+           RESPONSIVE
+        ============================================================ */
+        @media (max-width: 1400px) {
+            .number-grid { gap: 10px 8px; }
+            .number-btn { width: 58px; height: 58px; font-size: 22px; }
+        }
+
+        @media (max-width: 1200px) {
+            .page-content { padding: 16px 20px 20px; }
+            .control-row { gap: 16px; }
+        }
+
+        @media (max-width: 992px) {
+            .brand-block { width: 180px; padding: 0 16px; }
+            .brand-text { font-size: 14px; }
+            .toolbar { gap: 14px; padding: 0 16px; }
+            .datetime { font-size: 13px; }
+            .number-btn { width: 50px; height: 50px; font-size: 18px; }
+            .number-grid {
+                grid-template-columns: repeat(10, minmax(0, 1fr));
+                gap: 8px;
+            }
+            .grid-outer { border-width: 2px; }
+            .control-row { justify-content: center; }
+        }
+
+        @media (max-width: 768px) {
+            .datetime { display: none; }
+            .brand-block { width: 140px; }
+            .brand-text { font-size: 12px; letter-spacing: 0.5px; }
+            .brand-logo { display: none; }
+            .number-grid {
+                grid-template-columns: repeat(5, minmax(0, 1fr));
+                gap: 8px;
+            }
+            .number-btn { width: 54px; height: 54px; font-size: 20px; }
+            .action-btn, .play-btn, .fullscreen-btn {
+                padding: 10px 16px;
+                font-size: 13px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .color-label { display: none; }
+            .number-btn { width: 46px; height: 46px; font-size: 17px; border-width: 2px; }
+        }
+
+        @media print {
+            .app-header, .control-row, .status-bar { display: none !important; }
+        }
+    </style>
+
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#0a0614">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="VIP Bingo">
+  <link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj4KICA8ZGVmcz4KICAgIDxyYWRpYWxHcmFkaWVudCBpZD0iYmciIGN4PSI1MCUiIGN5PSI0MCUiIHI9Ijc1JSI+CiAgICAgIDxzdG9wIG9mZnNldD0iMCUiIHN0b3AtY29sb3I9IiMyNDEyMzMiLz4KICAgICAgPHN0b3Agb2Zmc2V0PSIxMDAlIiBzdG9wLWNvbG9yPSIjMGEwNjE0Ii8+CiAgICA8L3JhZGlhbEdyYWRpZW50PgogICAgPGxpbmVhckdyYWRpZW50IGlkPSJnb2xkIiB4MT0iMCUiIHkxPSIwJSIgeDI9IjEwMCUiIHkyPSIxMDAlIj4KICAgICAgPHN0b3Agb2Zmc2V0PSIwJSIgc3RvcC1jb2xvcj0iI2ZmZDc2YSIvPgogICAgICA8c3RvcCBvZmZzZXQ9IjEwMCUiIHN0b3AtY29sb3I9IiNjOTkyMmMiLz4KICAgIDwvbGluZWFyR3JhZGllbnQ+CiAgICA8bGluZWFyR3JhZGllbnQgaWQ9InZpcCIgeDE9IjAlIiB5MT0iMCUiIHgyPSIxMDAlIiB5Mj0iMCUiPgogICAgICA8c3RvcCBvZmZzZXQ9IjAlIiBzdG9wLWNvbG9yPSIjZmY1ZWE4Ii8+CiAgICAgIDxzdG9wIG9mZnNldD0iNTAlIiBzdG9wLWNvbG9yPSIjZmZlMTRkIi8+CiAgICAgIDxzdG9wIG9mZnNldD0iMTAwJSIgc3RvcC1jb2xvcj0iIzRmZDRmZiIvPgogICAgPC9saW5lYXJHcmFkaWVudD4KICA8L2RlZnM+CiAgPHJlY3Qgd2lkdGg9IjUxMiIgaGVpZ2h0PSI1MTIiIHJ4PSI5NiIgZmlsbD0idXJsKCNiZykiLz4KICA8cmVjdCB4PSI0MCIgeT0iNDAiIHdpZHRoPSI0MzIiIGhlaWdodD0iNDMyIiByeD0iNTYiIGZpbGw9Im5vbmUiIHN0cm9rZT0idXJsKCNnb2xkKSIgc3Ryb2tlLXdpZHRoPSIxNCIvPgogIDx0ZXh0IHg9IjI1NiIgeT0iMjM2IiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmb250LWZhbWlseT0iQXJpYWwgQmxhY2ssIEFyaWFsLCBzYW5zLXNlcmlmIiBmb250LXdlaWdodD0iOTAwIgogICAgICAgIGZvbnQtc2l6ZT0iMTQwIiBmaWxsPSJ1cmwoI3ZpcCkiIHN0cm9rZT0iIzFhMGIyOCIgc3Ryb2tlLXdpZHRoPSI0Ij5WSVA8L3RleHQ+CiAgPHRleHQgeD0iMjU2IiB5PSIzNjAiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZvbnQtZmFtaWx5PSJHZW9yZ2lhLCAnVGltZXMgTmV3IFJvbWFuJywgc2VyaWYiIGZvbnQtc3R5bGU9Iml0YWxpYyIgZm9udC13ZWlnaHQ9IjcwMCIKICAgICAgICBmb250LXNpemU9Ijk2IiBmaWxsPSIjZmYzYjVjIiBzdHJva2U9IiMxYTBiMjgiIHN0cm9rZS13aWR0aD0iMyI+QmluZ288L3RleHQ+CiAgPGNpcmNsZSBjeD0iMTEwIiBjeT0iMzAwIiByPSIzNCIgZmlsbD0iIzE3YzdmZiIvPgogIDx0ZXh0IHg9IjExMCIgeT0iMzExIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmb250LWZhbWlseT0iQXJpYWwsIHNhbnMtc2VyaWYiIGZvbnQtd2VpZ2h0PSI3MDAiIGZvbnQtc2l6ZT0iMzAiIGZpbGw9IiMwYTA2MTQiPjc8L3RleHQ+CiAgPGNpcmNsZSBjeD0iNDAyIiBjeT0iMzAwIiByPSIzNCIgZmlsbD0iI2ZmMmVjNCIvPgogIDx0ZXh0IHg9IjQwMiIgeT0iMzExIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmb250LWZhbWlseT0iQXJpYWwsIHNhbnMtc2VyaWYiIGZvbnQtd2VpZ2h0PSI3MDAiIGZvbnQtc2l6ZT0iMjgiIGZpbGw9IiMwYTA2MTQiPjg4PC90ZXh0Pgo8L3N2Zz4K">
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js', { scope: '/' }).catch(() => {});
+      });
+    }
+  </script>
+</head>
+<body>
+
+<!-- ============================================================
+     TOP HEADER
+============================================================ -->
+<header class="app-header">
+    <div class="brand-block">
+        <div class="hamburger" onclick="goToMenu()" title="Back to menu">
+            <span></span>
+            <span></span>
+            <span></span>
+        </div>
+        <div class="brand-text">BLACK BINGO</div>
+        <div class="brand-logo">🎯</div>
+    </div>
+
+    <div class="toolbar">
+        <div class="datetime" id="datetime">—</div>
+
+        <span class="color-label">Color</span>
+        <div class="color-swatch-wrap">
+            <button class="color-swatch" id="colorSwatch" onclick="cycleColor()">W</button>
+        </div>
+
+        <div class="toolbar-spacer"></div>
+
+        <div class="profile-icon" onclick="toggleProfile()" title="Profile">
+            <span id="profileLetter">?</span>
+        </div>
+    </div>
+</header>
+
+<!-- ============================================================
+     PAGE CONTENT
+============================================================ -->
+<main class="page-content">
+
+    <!-- Status -->
+    <div class="status-bar">
+        <div class="game-status" id="gameStatus">🟡 Loading…</div>
+    </div>
+
+    <!-- SELECT CARD heading -->
+    <div class="select-card-panel">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2">
+            <rect x="3" y="3" width="7" height="7" rx="1"></rect>
+            <rect x="14" y="3" width="7" height="7" rx="1"></rect>
+            <rect x="14" y="14" width="7" height="7" rx="1"></rect>
+            <rect x="3" y="14" width="7" height="7" rx="1"></rect>
+        </svg>
+        <span>SELECT CARD</span>
+    </div>
+
+    <!-- Number grid -->
+    <div class="grid-outer">
+        <div class="grid-scroll">
+            <div class="number-grid" id="numberGrid"></div>
+        </div>
+    </div>
+
+    <!-- Control row -->
+    <div class="control-row">
+
+        <div class="action-group">
+            <button class="action-btn" onclick="openEnterCardDialog()">EnterCard</button>
+            <button class="action-btn" onclick="syncPrevious()">Sync Previous</button>
+            <button class="action-btn" onclick="fetchCards()">Fetch</button>
+            <button class="action-btn reset-btn" id="resetGamesBtn" onclick="openResetDialog()">Reset</button>
+        </div>
+
+        <div class="stepper-group">
+            <div class="stepper-label">BET(BIRR)</div>
+            <div class="stepper">
+                <button class="minus" onclick="adjustBet(-1)">−</button>
+                <input type="number" class="value" id="betValue" value="10" min="1" step="1" inputmode="numeric" onchange="setBet(this.value)" onkeydown="if (event.key === 'Enter') this.blur()">
+                <button class="plus" onclick="adjustBet(1)">+</button>
+            </div>
+        </div>
+
+        <!-- Winning pattern count stepper (ዝግ) -->
+        <div class="stepper-group zig-group">
+            <div class="stepper-label">ዝግ</div>
+            <div class="stepper">
+                <button class="minus" onclick="adjustZig(-1)">−</button>
+                <div class="value" id="zigValue">1</div>
+                <button class="plus" onclick="adjustZig(1)">+</button>
+            </div>
+        </div>
+
+        <div class="right-group">
+            <button class="play-btn" id="playBtn" onclick="startGame()">Play</button>
+            <button class="fullscreen-btn" onclick="toggleFullscreen()">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2">
+                    <path d="M8 3H5a2 2 0 0 0-2 2v3"></path>
+                    <path d="M21 8V5a2 2 0 0 0-2-2h-3"></path>
+                    <path d="M3 16v3a2 2 0 0 0 2 2h3"></path>
+                    <path d="M16 21h3a2 2 0 0 0 2-2v-3"></path>
+                </svg>
+                <span>Fullscreen</span>
+            </button>
+        </div>
+
+    </div>
+
+</main>
+
+<!-- ============================================================
+     ENTER CARD DIALOG
+============================================================ -->
+<div class="enter-card-overlay" id="resetOverlay">
+    <div class="enter-card-dialog">
+        <div class="enter-card-title">Reset games?</div>
+        <div class="enter-card-subtitle">This ends any running game and clears the cards picked for the waiting game, so you can start fresh.</div>
+        <div class="enter-card-feedback" id="resetFeedback"></div>
+        <div class="enter-card-actions">
+            <button class="cancel-btn" onclick="closeResetDialog()">Cancel</button>
+            <button class="add-btn" id="resetConfirmBtn" onclick="confirmReset()">Reset</button>
+        </div>
+    </div>
+</div>
+
+<div class="enter-card-overlay" id="enterCardOverlay">
+    <div class="enter-card-dialog">
+        <div class="enter-card-title">Enter Card Number</div>
+        <div class="enter-card-subtitle">Type a number between 1 and <span id="enterMaxNum">150</span></div>
+
+        <input
+            type="number"
+            id="enterCardInput"
+            class="enter-card-input"
+            placeholder="e.g. 42"
+            min="1"
+            autocomplete="off"
+        >
+        <div class="enter-card-feedback" id="enterCardFeedback"></div>
+
+        <div class="enter-card-actions">
+            <button class="cancel-btn" onclick="closeEnterCardDialog()">Cancel</button>
+            <button class="add-btn" id="enterCardAddBtn" onclick="submitEnterCard()">Add Card</button>
+        </div>
+    </div>
+</div>
+
+<div class="toast-area" id="toastArea"></div>
+
+<script>
+/* ============================================================ */
+/*  STATE                                                        */
+/* ============================================================ */
+let registrationState = {
+    totalCards: 150,
+    soldCards: new Set(),
+    refundedCards: new Set(),
+    selectedCards: new Set(),
+    selectionOwners: new Map(),   // card number -> username of whoever picked it
+    currentCard: 1,
+    thicketPrice: 10.00,
+    patternsRequired: 1,       // ← NEW: mirrors Reports page "Lines Required to Win"
+    cartelas: [],
+    activeGame: null,
+    settings: {},
+    walletBalance: 0
+};
+
+let currentUser = null;
+let isAdmin = false;
+let isStartingGame = false;
+const COLORS = ['W', 'B', 'G', 'Y'];
+let colorIdx = 0;
+
+// Zig (patterns-required) constraints
+const ZIG_MIN = 1;
+const ZIG_MAX = 5;
+
+/* ============================================================ */
+/*  TOAST                                                        */
+/* ============================================================ */
+function showMessage(text, type = 'info') {
+    const area = document.getElementById('toastArea');
+    const msg = document.createElement('div');
+    msg.className = `toast ${type}`;
+    msg.textContent = text;
+    area.appendChild(msg);
+    setTimeout(() => {
+        msg.style.transition = 'opacity 0.3s, transform 0.3s';
+        msg.style.opacity = '0';
+        msg.style.transform = 'translateY(10px)';
+        setTimeout(() => msg.remove(), 300);
+    }, 2800);
+}
+
+/* ============================================================ */
+/*  CLOCK                                                        */
+/* ============================================================ */
+function updateClock() {
+    const el = document.getElementById('datetime');
+    if (!el) return;
+    const d = new Date();
+    el.textContent = d.toLocaleString('en-US', {
+        month: 'long', day: 'numeric', year: 'numeric',
+        hour: 'numeric', minute: '2-digit', hour12: true
+    });
+}
+
+/* ============================================================ */
+/*  SESSION GUARD                                                */
+/* ============================================================ */
+// Cashiers can only select and sell cards: no start, reset, sync, bet or pattern changes.
+function applyRoleUI() {
+    if (isAdmin) return;
+    const hide = (el) => { if (el) el.style.display = 'none'; };
+    hide(document.getElementById('resetGamesBtn'));
+    hide(document.querySelector('[onclick="syncPrevious()"]'));
+    // Cashiers only see EnterCard and Fullscreen; EnterCard sells the card straight away.
+    document.querySelectorAll('.stepper-group').forEach(hide);
+    hide(document.querySelector('[onclick="fetchCards()"]'));
+    hide(document.getElementById('playBtn'));
+}
+
+async function verifySession() {
+    try {
+        const me = await window.api.me();
+        if (!me?.success || !me.user) {
+            window.location.href = '/login.html';
+            return false;
+        }
+        currentUser = me.user;
+        isAdmin = me.user.role === 'admin';
+        applyRoleUI();
+
+        const letter = (currentUser.username || '?')[0].toUpperCase();
+        document.getElementById('profileLetter').textContent = letter;
+        return true;
+    } catch (e) {
+        window.location.href = '/login.html';
+        return false;
+    }
+}
+
+/* ============================================================ */
+/*  PROFILE / COLOR                                              */
+/* ============================================================ */
+function toggleProfile() {
+    const action = confirm(`Signed in as ${currentUser?.username || 'user'}\n\nLog out?`);
+    if (action) {
+        window.api.logout().then(() => window.location.href = '/login.html');
+    }
+}
+
+function cycleColor() {
+    colorIdx = (colorIdx + 1) % COLORS.length;
+    const c = COLORS[colorIdx];
+    const swatch = document.getElementById('colorSwatch');
+    swatch.textContent = c;
+    const bgMap = { W: '#5146b5', B: '#1e293b', G: '#10b981', Y: '#f59e0b' };
+    swatch.style.background = bgMap[c];
+    showMessage(`Color: ${c}`, 'info');
+}
+
+/* ============================================================ */
+/*  YELLOW CIRCLE + PURPLE NUMBER ZOOM ANIMATION
+/* ============================================================ */
+function playSelectAnimation(cardElement) {
+    if (!cardElement) return;
+
+    const ringSize = Math.max(window.innerWidth, window.innerHeight) * 0.22;
+    const cx = window.innerWidth / 2;
+    const cy = window.innerHeight / 2;
+
+    const ring = document.createElement('div');
+    ring.className = 'zoom-ring';
+    ring.style.left = cx + 'px';
+    ring.style.top = cy + 'px';
+    ring.style.width = ringSize + 'px';
+    ring.style.height = ringSize + 'px';
+    document.body.appendChild(ring);
+
+    const label = document.createElement('div');
+    label.className = 'zoom-number';
+    label.textContent = cardElement.textContent;
+    const fontSize = Math.round(Math.min(window.innerWidth, window.innerHeight) * 0.18);
+    label.style.fontSize = Math.max(120, fontSize) + 'px';
+    label.style.left = cx + 'px';
+    label.style.top = cy + 'px';
+    document.body.appendChild(label);
+
+    setTimeout(() => ring.remove(), 900);
+    setTimeout(() => label.remove(), 1000);
+}
+
+/* ============================================================ */
+/*  SETTINGS                                                     */
+/* ============================================================ */
+async function loadSettings() {
+    try {
+        const s = await window.api.getSettings();
+        if (s) {
+            registrationState.settings = s;
+
+            const price = Number(s.thicket_price) || 10;
+            registrationState.thicketPrice = price;
+            document.getElementById('betValue').value = price;
+
+            let req = parseInt(s.patterns_required, 10);
+            if (!Number.isFinite(req) || req < ZIG_MIN || req > ZIG_MAX) {
+                req = 1;
+            }
+            registrationState.patternsRequired = req;
+            document.getElementById('zigValue').textContent = req;
+        }
+    } catch (e) { console.error('Settings error:', e); }
+}
+
+/* ============================================================ */
+/*  LOAD CARTELAS — uses the full list from the DB               */
+/* ============================================================ */
+async function loadAllCartelas() {
+    try {
+        const cartelas = await window.api.getAllCartelas();
+        if (cartelas && cartelas.length > 0) {
+            registrationState.cartelas = cartelas;
+            registrationState.totalCards = cartelas.length;
+            console.log(`Loaded ${cartelas.length} cartelas from DB`);
+            return cartelas;
+        }
+        showMessage('No cartelas found', 'error');
+        return [];
+    } catch (e) {
+        showMessage('Error loading cartelas: ' + e.message, 'error');
+        return [];
+    }
+}
+
+/* ============================================================ */
+/*  LOAD SOLD TICKETS                                            */
+/* ============================================================ */
+async function loadSoldTickets() {
+    try {
+        if (!registrationState.activeGame?.gameId) return;
+        const tickets = await window.api.getGameTickets(registrationState.activeGame.gameId);
+        registrationState.soldCards.clear();
+        registrationState.refundedCards.clear();
+
+        (tickets || []).forEach(t => {
+            const id = parseInt(t.cartela_id);
+            if (t.status === 'refunded') registrationState.refundedCards.add(id);
+            else if (t.status === 'active') registrationState.soldCards.add(id);
+        });
+
+        updateGrid();
+    } catch (e) {
+        console.error('Tickets error:', e);
+    }
+}
+
+/* ============================================================ */
+/*  NUMBER GRID — generates ALL cartelas from DB                 */
+/* ============================================================ */
+function generateGrid() {
+    const grid = document.getElementById('numberGrid');
+    if (!grid) return;
+    grid.innerHTML = '';
+
+    const total = registrationState.totalCards || 150;
+    console.log(`Generating grid with ${total} cards`);
+
+    for (let i = 1; i <= total; i++) {
+        const btn = document.createElement('button');
+        btn.className = 'number-btn';
+        btn.id = `card-${i}`;
+        btn.type = 'button';
+        btn.textContent = i;
+        btn.setAttribute('aria-label', `Card ${i}`);
+        btn.addEventListener('click', () => toggleCard(i));
+        grid.appendChild(btn);
+    }
+}
+
+// Shows the selection held by the server (the same on every screen)
+function applySelection(payload) {
+    const activeId = registrationState.activeGame?.gameId;
+    if (payload && payload.gameId && activeId && payload.gameId !== activeId) return;
+    registrationState.selectedCards.clear();
+    registrationState.selectionOwners.clear();
+    (payload?.cards || []).forEach(c => {
+        const id = parseInt(c.cartelaId, 10);
+        registrationState.selectedCards.add(id);
+        registrationState.selectionOwners.set(id, c.by);
+    });
+    updateGrid();
+}
+
+async function loadSelection() {
+    try { applySelection(await window.api.getSelection()); } catch (e) { /* keep what we have */ }
+}
+
+async function sendSelection(number, selected) {
+    try {
+        const r = await window.api.setSelection(number, selected);
+        if (r?.success === false) throw new Error(r.error || 'Could not update the selection');
+        if (r?.rejected?.length) showMessage(`Card #${number} is not available`, 'warning');
+    } catch (e) {
+        showMessage(e.message, 'error');
+    }
+    await loadSelection();   // always end up showing what the server holds
+}
+
+function toggleCard(number) {
+    if (!registrationState.activeGame) {
+        showMessage('No active game', 'error');
+        return;
+    }
+    if (registrationState.activeGame.status === 'running') {
+        showMessage('Cannot select cards for a running game', 'warning');
+        return;
+    }
+    if (registrationState.soldCards.has(number)) {
+        showMessage(`Card #${number} is already sold`, 'warning');
+        return;
+    }
+    if (registrationState.refundedCards.has(number)) {
+        showMessage(`Card #${number} is refunded`, 'warning');
+        return;
+    }
+
+    const wasSelected = registrationState.selectedCards.has(number);
+
+    if (wasSelected) {
+        registrationState.selectedCards.delete(number);
+    } else {
+        registrationState.selectedCards.add(number);
+        const cardEl = document.getElementById(`card-${number}`);
+        if (cardEl) playSelectAnimation(cardEl);
+    }
+
+    updateGrid();
+    registrationState.currentCard = number;
+    registrationState.selectionOwners.set(number, currentUser?.username || '');
+    sendSelection(number, !wasSelected);
+}
+
+function updateGrid() {
+    const total = registrationState.totalCards || 150;
+    for (let i = 1; i <= total; i++) {
+        const btn = document.getElementById(`card-${i}`);
+        if (!btn) continue;
+
+        btn.classList.remove('selected', 'sold', 'refunded');
+
+        if (registrationState.soldCards.has(i)) {
+            btn.classList.add('sold');
+            btn.disabled = true;
+        } else if (registrationState.refundedCards.has(i)) {
+            btn.classList.add('refunded');
+            btn.disabled = true;
+        } else {
+            btn.disabled = false;
+            if (registrationState.selectedCards.has(i)) {
+                btn.classList.add('selected');
+            }
+        }
+    }
+}
+
+/* ============================================================ */
+/*  ENTER CARD DIALOG
+/* ============================================================ */
+function openEnterCardDialog() {
+    const overlay = document.getElementById('enterCardOverlay');
+    const input = document.getElementById('enterCardInput');
+    const feedback = document.getElementById('enterCardFeedback');
+    const maxSpan = document.getElementById('enterMaxNum');
+
+    // Set max value shown to the user
+    if (maxSpan) maxSpan.textContent = registrationState.totalCards || 150;
+
+    // Reset state
+    input.value = '';
+    input.classList.remove('error');
+    feedback.textContent = '';
+    feedback.className = 'enter-card-feedback';
+
+    overlay.classList.add('show');
+    // Focus input after the modal transition
+    setTimeout(() => input.focus(), 120);
+}
+
+function openResetDialog() {
+    document.getElementById('resetFeedback').textContent = '';
+    document.getElementById('resetFeedback').className = 'enter-card-feedback';
+    document.getElementById('resetConfirmBtn').disabled = false;
+    document.getElementById('resetOverlay').classList.add('show');
+}
+
+function closeResetDialog() {
+    document.getElementById('resetOverlay').classList.remove('show');
+}
+
+async function confirmReset() {
+    const btn = document.getElementById('resetConfirmBtn');
+    const feedback = document.getElementById('resetFeedback');
+    btn.disabled = true;
+    try {
+        const res = await window.api.resetAllGames();
+        if (!res?.success) throw new Error(res?.error || 'Reset failed');
+        window.location.reload();
+    } catch (e) {
+        feedback.textContent = e.message;
+        feedback.className = 'enter-card-feedback error';
+        btn.disabled = false;
+    }
+}
+
+function closeEnterCardDialog() {
+    const overlay = document.getElementById('enterCardOverlay');
+    overlay.classList.remove('show');
+}
+
+/**
+ * Called when the user clicks "Add Card" inside the dialog.
+ * Validates the number, adds it to the selection, and keeps
+ * the dialog OPEN so the user can enter the next number right away.
+ * Dialog closes only when Cancel or × is pressed.
+ */
+function submitEnterCard() {
+    const input = document.getElementById('enterCardInput');
+    const feedback = document.getElementById('enterCardFeedback');
+    const raw = input.value.trim();
+
+    input.classList.remove('error');
+
+    if (!raw || isNaN(parseInt(raw, 10))) {
+        input.classList.add('error');
+        feedback.textContent = 'Please enter a valid number';
+        feedback.className = 'enter-card-feedback error';
+        return;
+    }
+
+    const num = parseInt(raw, 10);
+    const max = registrationState.totalCards || 150;
+
+    if (num < 1 || num > max) {
+        input.classList.add('error');
+        feedback.textContent = `Number must be between 1 and ${max}`;
+        feedback.className = 'enter-card-feedback error';
+        return;
+    }
+
+    if (registrationState.soldCards.has(num)) {
+        input.classList.add('error');
+        feedback.textContent = `Card #${num} is already sold`;
+        feedback.className = 'enter-card-feedback error';
+        return;
+    }
+
+    if (registrationState.refundedCards.has(num)) {
+        input.classList.add('error');
+        feedback.textContent = `Card #${num} is refunded`;
+        feedback.className = 'enter-card-feedback error';
+        return;
+    }
+
+    if (registrationState.selectedCards.has(num)) {
+        // It's already in the list, but the user typed it again — just confirm
+        feedback.textContent = `Card #${num} is already selected`;
+        feedback.className = 'enter-card-feedback success';
+        input.value = '';
+        input.focus();
+        return;
+    }
+
+    // Add to selection
+    registrationState.selectedCards.add(num);
+    registrationState.selectionOwners.set(num, currentUser?.username || '');
+    updateGrid();
+    sendSelection(num, true);
+
+    const cardEl = document.getElementById(`card-${num}`);
+    if (cardEl) playSelectAnimation(cardEl);
+
+    // Feedback + reset input for the next entry
+    feedback.textContent = `✅ Card #${num} added — enter next card`;
+    feedback.className = 'enter-card-feedback success';
+    input.value = '';
+    input.classList.remove('error');
+    input.focus();
+}
+
+// Wire Enter key inside the input
+document.addEventListener('DOMContentLoaded', () => {
+    const input = document.getElementById('enterCardInput');
+    if (input) {
+        input.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                submitEnterCard();
+            }
+        });
+
+        // Live clear the error state as the user types
+        input.addEventListener('input', () => {
+            input.classList.remove('error');
+            const feedback = document.getElementById('enterCardFeedback');
+            feedback.textContent = '';
+            feedback.className = 'enter-card-feedback';
+        });
+    }
+
+    // Close if the user clicks outside the dialog box
+    const overlay = document.getElementById('enterCardOverlay');
+    if (overlay) {
+        overlay.addEventListener('click', (e) => {
+            if (e.target === overlay) closeEnterCardDialog();
+        });
+    }
+});
+
+/* ============================================================ */
+/*  ACTION BUTTONS (legacy — kept for compatibility)
+/*  enterCard is now handled by the modal.
+/* ============================================================ */
+function enterCard() {
+    openEnterCardDialog();
+}
+
+async function syncPrevious() {
+    try {
+        showMessage('Syncing previous selections…', 'info');
+        const games = await window.api.getAllGames();
+        if (!Array.isArray(games) || games.length === 0) {
+            return showMessage('No previous game found', 'warning');
+        }
+        const game = games.find(g => g.status === 'waiting') || games[0];
+        const tickets = await window.api.getGameTickets(game.id);
+        const ids = (tickets || []).filter(t => t.status === 'active').map(t => parseInt(t.cartela_id));
+        const synced = await window.api.setSelectionMany(ids, true);
+        if (synced?.success === false) throw new Error(synced.error || 'Could not sync');
+        applySelection(synced);
+        showMessage(`Synced ${registrationState.selectedCards.size} cards`, 'success');
+    } catch (e) {
+        showMessage('Sync failed: ' + e.message, 'error');
+    }
+}
+
+async function fetchCards() {
+    try {
+        showMessage('Fetching available cards…', 'info');
+        await loadAllCartelas();
+        generateGrid();
+        await loadSoldTickets();
+        updateGrid();
+        showMessage('Cards refreshed', 'success');
+    } catch (e) {
+        showMessage('Fetch failed: ' + e.message, 'error');
+    }
+}
+
+/* ============================================================ */
+/*  ACTIVE GAME — hardened with auto-create fallback             */
+/* ============================================================ */
+async function ensureActiveGame() {
+    const gameStatus = document.getElementById('gameStatus');
+
+    try {
+        let waitingGames = [];
+        try {
+            waitingGames = await window.api.getWaitingGames() || [];
+        } catch (e) {
+            waitingGames = [];
+        }
+
+        if (waitingGames.length > 0) {
+            const g = waitingGames[0];
+            registrationState.activeGame = {
+                gameId: g.id,
+                gameNumber: g.game_number,
+                status: 'waiting',
+                started: false
+            };
+            gameStatus.className = 'game-status ready';
+            gameStatus.innerHTML = `✅ Ready: ${g.game_number}`;
+            return;
+        }
+
+        let runningGame = null;
+        try {
+            runningGame = await window.api.getRunningGame();
+        } catch (e) {
+            runningGame = null;
+        }
+
+        if (runningGame && runningGame.id) {
+            registrationState.activeGame = {
+                gameId: runningGame.id,
+                gameNumber: runningGame.game_number,
+                status: 'running',
+                started: true
+            };
+            gameStatus.className = 'game-status running';
+            gameStatus.innerHTML = `🔴 Running: ${runningGame.game_number}`;
+            return;
+        }
+
+        const now = new Date();
+        const p = (x) => String(x).padStart(2, '0');
+        const gameNumber =
+            `GAME-${now.getFullYear()}${p(now.getMonth()+1)}${p(now.getDate())}-` +
+            `${p(now.getHours())}${p(now.getMinutes())}${p(now.getSeconds())}`;
+
+        const game = await window.api.createGame(gameNumber);
+        const gameId = game?.gameId || game?.id;
+
+        if (!gameId) throw new Error('Server did not return a gameId');
+
+        registrationState.activeGame = {
+            gameId,
+            gameNumber: game?.gameNumber || game?.game_number || gameNumber,
+            status: 'waiting',
+            started: false
+        };
+        gameStatus.className = 'game-status ready';
+        gameStatus.innerHTML = `✅ Ready: ${registrationState.activeGame.gameNumber}`;
+
+        registrationState.soldCards.clear();
+        registrationState.refundedCards.clear();
+        registrationState.selectedCards.clear();
+        updateGrid();
+
+    } catch (e) {
+        console.error('Game init error:', e);
+        showMessage('Error: ' + e.message, 'error');
+        gameStatus.className = 'game-status error';
+        gameStatus.textContent = '⚠️ ' + e.message;
+
+        registrationState.activeGame = null;
+    }
+}
+
+/* ============================================================ */
+/*  START GAME — sells tickets then navigates                    */
+/* ============================================================ */
+async function startGame() {
+    if (isStartingGame) return;
+
+    const playBtn = document.getElementById('playBtn');
+
+    if (registrationState.activeGame?.status === 'running') {
+        if (!isAdmin) return showMessage('A game is in progress. You can sell cards when the next game is ready.', 'warning');
+        document.body.style.transition = 'opacity 0.4s';
+        document.body.style.opacity = '0';
+        return setTimeout(() => window.location.href = '/game.html', 500);
+    }
+
+    if (
+        registrationState.activeGame?.status === 'waiting' &&
+        registrationState.soldCards.size > 0 &&
+        registrationState.selectedCards.size === 0
+    ) {
+        if (!isAdmin) return showMessage('Select cards to sell first', 'warning');
+        showMessage('Returning to game room…', 'info');
+        document.body.style.transition = 'opacity 0.4s';
+        document.body.style.opacity = '0';
+        return setTimeout(() => window.location.href = '/game.html', 500);
+    }
+
+    if (!registrationState.activeGame) {
+        showMessage('Creating a new game…', 'info');
+        await ensureActiveGame();
+        if (!registrationState.activeGame) {
+            return showMessage('Could not create a game. Try again.', 'error');
+        }
+    }
+
+    if (registrationState.selectedCards.size === 0) {
+        return showMessage('Select at least one card first', 'warning');
+    }
+
+    isStartingGame = true;
+    const originalText = playBtn.textContent;
+    playBtn.disabled = true;
+    playBtn.textContent = 'Selling…';
+
+    try {
+        // Each card is sold under the name of whoever picked it, so commissions go to the right seller
+        const bySeller = new Map();
+        for (const id of registrationState.selectedCards) {
+            const owner = registrationState.selectionOwners.get(id) || currentUser?.username || 'cashier';
+            if (!bySeller.has(owner)) bySeller.set(owner, []);
+            bySeller.get(owner).push(id);
+        }
+
+        let sold = 0;
+        let failed = 0;
+        for (const [owner, ids] of bySeller) {
+            const r = await window.api.bulkSellTickets(ids, registrationState.thicketPrice, owner);
+            if (r?.success === false) { failed += ids.length; continue; }
+            sold += r?.sold ?? 0;
+            failed += r?.failed?.length ?? 0;
+            if (r?.gameId) registrationState.activeGame.gameId = r.gameId;
+        }
+
+        registrationState.selectedCards.clear();
+        await loadSoldTickets();
+        updateGrid();
+
+        if (sold === 0) {
+            showMessage(
+                failed > 0 ? `No cards sold (${failed} failed)` : 'No cards were sold',
+                'error'
+            );
+            playBtn.disabled = false;
+            playBtn.textContent = originalText;
+            isStartingGame = false;
+            return;
+        }
+
+        showMessage(
+            `✅ Sold ${sold} card${sold > 1 ? 's' : ''}` +
+            (failed ? ` (${failed} failed)` : ''),
+            'success'
+        );
+
+        if (!isAdmin) {
+            playBtn.disabled = false;
+            playBtn.textContent = originalText;
+            isStartingGame = false;
+            return;
+        }
+
+        playBtn.textContent = 'Starting…';
+        document.body.style.transition = 'opacity 0.4s';
+        document.body.style.opacity = '0';
+        setTimeout(() => window.location.href = '/game.html', 500);
+
+    } catch (e) {
+        showMessage('Error: ' + e.message, 'error');
+        playBtn.disabled = false;
+        playBtn.textContent = originalText;
+        isStartingGame = false;
+    }
+}
+
+/* ============================================================ */
+/*  BET STEPPER                                                  */
+/* ============================================================ */
+function adjustBet(delta) {
+    setBet(registrationState.thicketPrice + delta);
+}
+
+// Saves the bet quietly (no popup); used by + / − and by typing in the box.
+function setBet(value) {
+    let next = Math.round(Number(value));
+    if (!Number.isFinite(next) || next < 1) next = registrationState.thicketPrice || 1;
+    registrationState.thicketPrice = next;
+    document.getElementById('betValue').value = next;
+
+    if (window.api?.updateSettings) {
+        window.api.updateSettings({ thicket_price: next }).catch(() => {});
+    }
+}
+
+/* ============================================================ */
+/*  ዝግ STEPPER — winning patterns required
+/* ============================================================ */
+function adjustZig(delta) {
+    const current = registrationState.patternsRequired;
+    let next = current + delta;
+
+    if (next < ZIG_MIN) next = ZIG_MIN;
+    if (next > ZIG_MAX) next = ZIG_MAX;
+
+    if (next === current) return;
+
+    registrationState.patternsRequired = next;
+    document.getElementById('zigValue').textContent = next;
+
+    if (window.api?.updateSettings) {
+        window.api.updateSettings({ patterns_required: next })
+            .then(r => {
+                if (r?.success) {
+                    showMessage(`ዝግ set to ${next}`, 'success');
+                } else {
+                    showMessage(`ዝግ set to ${next} (local)`, 'warning');
+                }
+            })
+            .catch(() => {
+                showMessage(`ዝግ set to ${next} (local)`, 'warning');
+            });
+    }
+}
+
+/* ============================================================ */
+/*  FULLSCREEN / MENU                                            */
+/* ============================================================ */
+function toggleFullscreen() {
+    if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().catch(() => {});
+    } else {
+        document.exitFullscreen();
+    }
+}
+
+function goToMenu() {
+    if (registrationState.activeGame?.status === 'running') {
+        if (!confirm('Game is in progress. Leave to menu?')) return;
+    }
+    window.location.href = '/menu.html';
+}
+
+/* ============================================================ */
+/*  INIT                                                         */
+/* ============================================================ */
+function setupLiveSync() {
+    window.api.onSelectionChanged?.((payload) => {
+        applySelection(payload);
+        loadSoldTickets();   // cards sell when the admin presses Play
+    });
+
+    let refreshTimer = null;
+    const refreshAll = () => {
+        clearTimeout(refreshTimer);
+        refreshTimer = setTimeout(async () => {
+            await ensureActiveGame();
+            await loadSoldTickets();
+            await loadSelection();
+        }, 400);
+    };
+
+    let lastState = '';
+    window.api.onGameStateChanged?.((state) => {
+        const key = (state?.gameId ?? '') + ':' + (state?.gameStatus ?? '');
+        if (key === lastState) return;
+        lastState = key;
+        refreshAll();
+    });
+    window.api.onGameEnded?.(refreshAll);
+    window.addEventListener('bingo-socket-up', (e) => { if (e.detail?.recovered) refreshAll(); });
+}
+
+document.addEventListener('DOMContentLoaded', async () => {
+    updateClock();
+    setInterval(updateClock, 1000);
+
+    const ok = await verifySession();
+    if (!ok) return;
+
+    await loadSettings();
+    await loadAllCartelas();
+    generateGrid();
+    await ensureActiveGame();
+    await loadSoldTickets();
+    await loadSelection();
+    setupLiveSync();
+});
+</script>
+
+</body>
+</html>

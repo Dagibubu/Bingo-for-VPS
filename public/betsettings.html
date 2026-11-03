@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mella BINGO - Prize Settings</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        .bet-settings {
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 30px;
+            padding: 40px;
+            max-width: 450px;
+            margin: 50px auto;
+            animation: slideUp 0.5s ease;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+
+        .currency-input {
+            position: relative;
+            margin-bottom: 20px;
+        }
+
+        .currency-symbol {
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #94a3b8;
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        .currency-input input {
+            width: 100%;
+            padding: 15px 15px 15px 40px;
+            background: rgba(0, 0, 0, 0.3);
+            border: 2px solid rgba(255,255,255,0.1);
+            border-radius: 12px;
+            color: #f8fafc;
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        .currency-input input:focus {
+            border-color: #6366f1;
+            outline: none;
+        }
+
+        .quick-amounts {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+            margin: 20px 0;
+        }
+
+        .quick-btn {
+            padding: 10px;
+            background: rgba(0, 0, 0, 0.3);
+            border: 2px solid rgba(255,255,255,0.1);
+            border-radius: 12px;
+            color: #f8fafc;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 600;
+        }
+
+        .quick-btn:hover {
+            border-color: #6366f1;
+            transform: translateY(-2px);
+        }
+
+        .summary {
+            background: linear-gradient(135deg, #6366f1, #ec4899);
+            border-radius: 20px;
+            padding: 25px;
+            margin: 30px 0;
+            color: white;
+        }
+
+        .summary-row {
+            display: flex;
+            justify-content: space-between;
+            margin: 10px 0;
+            font-size: 16px;
+        }
+
+        .summary-total {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 2px solid rgba(255, 255, 255, 0.3);
+            font-size: 20px;
+            font-weight: 700;
+        }
+
+        .info-box {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 12px;
+            padding: 15px;
+            margin: 20px 0;
+            border-left: 4px solid #3b82f6;
+        }
+
+        .info-box-title {
+            font-weight: 600;
+            margin-bottom: 5px;
+            color: #3b82f6;
+        }
+
+        .info-box-text {
+            font-size: 14px;
+            color: #94a3b8;
+        }
+
+        .message {
+            background: rgba(30, 41, 59, 0.9);
+            backdrop-filter: blur(10px);
+            border-left: 4px solid #6366f1;
+            border-radius: 10px;
+            padding: 12px 20px;
+            margin-bottom: 10px;
+            animation: slideIn 0.3s ease;
+            color: #f8fafc;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+
+        .message.success {
+            border-left-color: #10b981;
+        }
+
+        .message.warning {
+            border-left-color: #f59e0b;
+        }
+
+        .message.error {
+            border-left-color: #ef4444;
+        }
+
+        .percentage-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin: 20px 0;
+        }
+
+        .percentage-card {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 16px;
+            padding: 15px;
+            text-align: center;
+            border: 2px solid rgba(255,255,255,0.1);
+        }
+
+        .percentage-card.winner {
+            border-color: #10b981;
+        }
+
+        .percentage-card.house {
+            border-color: #f59e0b;
+        }
+
+        .percentage-card.agent {
+            border-color: #8b5cf6;
+        }
+
+        .percentage-label {
+            font-size: 12px;
+            color: #94a3b8;
+            margin-bottom: 8px;
+        }
+
+        .percentage-value {
+            font-size: 24px;
+            font-weight: 700;
+        }
+
+        .percentage-value.winner {
+            color: #10b981;
+        }
+
+        .percentage-value.house {
+            color: #f59e0b;
+        }
+
+        .percentage-value.agent {
+            color: #8b5cf6;
+        }
+
+        .percentage-input {
+            width: 100%;
+            padding: 10px;
+            background: rgba(0, 0, 0, 0.5);
+            border: 2px solid rgba(255,255,255,0.1);
+            border-radius: 8px;
+            color: #f8fafc;
+            font-size: 16px;
+            text-align: center;
+            margin-top: 8px;
+        }
+
+        .percentage-input:focus {
+            border-color: #6366f1;
+            outline: none;
+        }
+
+        .total-indicator {
+            text-align: center;
+            margin: 15px 0;
+            padding: 10px;
+            border-radius: 8px;
+            font-weight: 600;
+        }
+
+        .total-indicator.valid {
+            background: rgba(16, 185, 129, 0.2);
+            color: #10b981;
+        }
+
+        .total-indicator.invalid {
+            background: rgba(239, 68, 68, 0.2);
+            color: #ef4444;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        @keyframes slideOut {
+            from {
+                transform: translateX(0);
+                opacity: 1;
+            }
+            to {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container" style="display: flex; align-items: center; min-height: 100vh;">
+        <div class="bet-settings">
+            <div style="text-align: center; margin-bottom: 30px;">
+                <h1 style="font-size: 32px; background: linear-gradient(135deg, #6366f1, #ec4899); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">💰 Prize Settings</h1>
+                <p style="color: #94a3b8;">Configure ticket price and prize distribution</p>
+            </div>
+
+            <!-- Thicket Price -->
+            <div style="margin-bottom: 30px;">
+                <label style="color: #94a3b8; display: block; margin-bottom: 10px;">Thicket Price</label>
+                <div class="currency-input">
+                    <span class="currency-symbol"></span>
+                    <input type="number" id="thicketPrice" value="10.00" step="0.01" min="1" max="1000">
+                </div>
+            </div>
+
+            <!-- Quick Thicket Price Presets -->
+            <div class="quick-amounts">
+                <button class="quick-btn" onclick="setThicketPrice(5)">5 birr</button>
+                <button class="quick-btn" onclick="setThicketPrice(10)">10 birr</button>
+                <button class="quick-btn" onclick="setThicketPrice(20)">20 birr</button>
+                <button class="quick-btn" onclick="setThicketPrice(50)">50 birr</button>
+            </div>
+
+            <!-- Prize Distribution -->
+            <div style="margin-top: 30px;">
+                <h3 style="color: #f8fafc; margin-bottom: 20px;">Prize Distribution (%)</h3>
+                
+                <!-- Percentage Cards -->
+                <div class="percentage-grid">
+                    <div class="percentage-card winner">
+                        <div class="percentage-label">Winner</div>
+                        <div class="percentage-value winner" id="winnerPercent">80%</div>
+                        <input type="number" id="winnerInput" class="percentage-input" min="0" max="100" step="1" value="80">
+                    </div>
+                    <div class="percentage-card house">
+                        <div class="percentage-label">House</div>
+                        <div class="percentage-value house" id="housePercent">15%</div>
+                        <input type="number" id="houseInput" class="percentage-input" min="0" max="100" step="1" value="15">
+                    </div>
+                    <div class="percentage-card agent">
+                        <div class="percentage-label">Agent</div>
+                        <div class="percentage-value agent" id="agentPercent">5%</div>
+                        <input type="number" id="agentInput" class="percentage-input" min="0" max="100" step="1" value="5">
+                    </div>
+                </div>
+
+                <!-- Total Indicator -->
+                <div class="total-indicator valid" id="totalIndicator">
+                    Total: <span id="totalPercent">100</span>% ✓
+                </div>
+            </div>
+
+            <!-- Quick Split Presets -->
+            <div class="quick-amounts" style="margin-top: 10px;">
+                <button class="quick-btn" onclick="setPreset(80, 15, 5)">80/15/5</button>
+                <button class="quick-btn" onclick="setPreset(70, 20, 10)">70/20/10</button>
+                <button class="quick-btn" onclick="setPreset(60, 30, 10)">60/30/10</button>
+                <button class="quick-btn" onclick="setPreset(50, 40, 10)">50/40/10</button>
+            </div>
+
+            <!-- Summary -->
+            <div class="summary">
+                <h3 style="margin-bottom: 20px;">Example Calculation</h3>
+                <div class="summary-row">
+                    <span>Ticket Price</span>
+                    <span id="ticketDisplay">10.00 birr</span>
+                </div>
+                <div class="summary-row">
+                    <span>Winner gets</span>
+                    <span id="winnerShare">8.00 birr</span>
+                </div>
+                <div class="summary-row">
+                    <span>House keeps</span>
+                    <span id="houseShare">1.50 birr</span>
+                </div>
+                <div class="summary-row">
+                    <span>Agent gets</span>
+                    <span id="agentShare">0.50 birr</span>
+                </div>
+                <div class="summary-total">
+                    <span>Total</span>
+                    <span id="totalPot">10.00 birr</span>
+                </div>
+            </div>
+
+            <!-- Info Box -->
+            <div class="info-box">
+                <div class="info-box-title">ℹ️ How it works</div>
+                <div class="info-box-text">
+                    • Winner gets their percentage of total ticket sales<br>
+                    • House keeps their percentage<br>
+                    • Agent gets commission percentage<br>
+                    • All percentages must add up to 100%
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div style="display: flex; gap: 15px;">
+                <button class="btn btn-primary" style="flex: 2; background: linear-gradient(135deg, #6366f1, #4f46e5); color: white; padding: 15px; border: none; border-radius: 12px; font-weight: 600; cursor: pointer;" onclick="saveSettings()">Save Settings</button>
+                <button class="btn btn-outline" style="flex: 1; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.1); color: #f8fafc; padding: 15px; border-radius: 12px; font-weight: 600; cursor: pointer;" onclick="window.location.href='menu.html'">Back</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // State
+        let isLoading = true;
+
+        // Check if API is available
+        function checkAPI() {
+            if (!window.api) {
+                console.error('API not available');
+                return false;
+            }
+            return true;
+        }
+
+        // Load settings from database
+        async function loadSettings() {
+            try {
+                if (!checkAPI()) {
+                    // Demo mode - use defaults
+                    document.getElementById('thicketPrice').value = 10.00;
+                    document.getElementById('winnerInput').value = 80;
+                    document.getElementById('houseInput').value = 15;
+                    document.getElementById('agentInput').value = 5;
+                    updateDisplay();
+                    return;
+                }
+
+                console.log('Loading prize settings...');
+                const settings = await window.api.getSettings();
+                console.log('Loaded settings:', settings);
+
+                if (settings) {
+                    // Load thicket price
+                    if (settings.thicket_price) {
+                        document.getElementById('thicketPrice').value = settings.thicket_price;
+                    }
+
+                    // Load winner percentage
+                    if (settings.prize_distribution_winner) {
+                        document.getElementById('winnerInput').value = settings.prize_distribution_winner;
+                    }
+
+                    // Load house percentage
+                    if (settings.prize_distribution_house) {
+                        document.getElementById('houseInput').value = settings.prize_distribution_house;
+                    }
+
+                    // Load agent percentage
+                    if (settings.prize_distribution_agent) {
+                        document.getElementById('agentInput').value = settings.prize_distribution_agent;
+                    }
+                }
+
+                updateDisplay();
+                
+            } catch (err) {
+                console.error('Error loading settings:', err);
+                showMessage('Error loading settings, using defaults', 'warning');
+                
+                // Fallback to defaults
+                document.getElementById('thicketPrice').value = 10.00;
+                document.getElementById('winnerInput').value = 80;
+                document.getElementById('houseInput').value = 15;
+                document.getElementById('agentInput').value = 5;
+                updateDisplay();
+            } finally {
+                isLoading = false;
+            }
+        }
+
+        // Set thicket price
+        function setThicketPrice(amount) {
+            document.getElementById('thicketPrice').value = amount;
+            updateDisplay();
+        }
+
+        // Set preset percentages
+        function setPreset(winner, house, agent) {
+            document.getElementById('winnerInput').value = winner;
+            document.getElementById('houseInput').value = house;
+            document.getElementById('agentInput').value = agent;
+            updateDisplay();
+        }
+
+        // Update display based on current values
+        function updateDisplay() {
+            const thicketPrice = parseFloat(document.getElementById('thicketPrice').value) || 0;
+            const winnerPercent = parseInt(document.getElementById('winnerInput').value) || 0;
+            const housePercent = parseInt(document.getElementById('houseInput').value) || 0;
+            const agentPercent = parseInt(document.getElementById('agentInput').value) || 0;
+            
+            const totalPercent = winnerPercent + housePercent + agentPercent;
+            
+            // Update percentage displays
+            document.getElementById('winnerPercent').textContent = winnerPercent + '%';
+            document.getElementById('housePercent').textContent = housePercent + '%';
+            document.getElementById('agentPercent').textContent = agentPercent + '%';
+            
+            // Update total indicator
+            const totalIndicator = document.getElementById('totalIndicator');
+            const totalPercentSpan = document.getElementById('totalPercent');
+            totalPercentSpan.textContent = totalPercent;
+            
+            if (totalPercent === 100) {
+                totalIndicator.className = 'total-indicator valid';
+                totalIndicator.innerHTML = `Total: ${totalPercent}% ✓`;
+            } else {
+                totalIndicator.className = 'total-indicator invalid';
+                totalIndicator.innerHTML = `Total: ${totalPercent}% ✗ (must be 100%)`;
+            }
+            
+            // Calculate shares
+            const winnerShare = thicketPrice * (winnerPercent / 100);
+            const houseShare = thicketPrice * (housePercent / 100);
+            const agentShare = thicketPrice * (agentPercent / 100);
+            
+            // Update summary
+            document.getElementById('ticketDisplay').textContent =  thicketPrice.toFixed(2) + 'birr';
+            document.getElementById('winnerShare').textContent =  winnerShare.toFixed(2) + 'birr';
+            document.getElementById('houseShare').textContent =  houseShare.toFixed(2) + 'birr';
+            document.getElementById('agentShare').textContent = agentShare.toFixed(2) + 'birr';
+            document.getElementById('totalPot').textContent = thicketPrice.toFixed(2) + 'birr';
+        }
+
+        // Add input event listeners to all percentage inputs
+        function addInputListeners() {
+            document.getElementById('winnerInput').addEventListener('input', updateDisplay);
+            document.getElementById('houseInput').addEventListener('input', updateDisplay);
+            document.getElementById('agentInput').addEventListener('input', updateDisplay);
+        }
+
+        // Save settings to database
+        async function saveSettings() {
+            try {
+                const thicketPrice = parseFloat(document.getElementById('thicketPrice').value);
+                const winnerPercent = parseInt(document.getElementById('winnerInput').value);
+                const housePercent = parseInt(document.getElementById('houseInput').value);
+                const agentPercent = parseInt(document.getElementById('agentInput').value);
+
+                // Validate total = 100
+                if (winnerPercent + housePercent + agentPercent !== 100) {
+                    showMessage('Percentages must add up to 100%', 'warning');
+                    return;
+                }
+
+                if (isLoading) return;
+
+                showMessage('Saving settings...', 'info');
+
+                // Prepare settings object matching your database structure
+                const settings = {
+                    thicket_price: thicketPrice,
+                    prize_distribution_winner: winnerPercent,
+                    prize_distribution_house: housePercent,
+                    prize_distribution_agent: agentPercent,
+                    updated_by: 'admin'
+                };
+
+                console.log('Saving prize settings:', settings);
+
+                if (!checkAPI()) {
+                    // Demo mode
+                    console.log('Demo mode - settings saved locally');
+                    showMessage('✅ Settings saved (demo mode)!', 'success');
+                    setTimeout(() => {
+                        window.location.href = 'menu.html';
+                    }, 1500);
+                    return;
+                }
+
+                // Save to database
+                const result = await window.api.updateSettings(settings);
+
+                if (result && result.success) {
+                    showMessage('✅ Prize settings saved successfully!', 'success');
+                    
+                    setTimeout(() => {
+                        window.location.href = 'menu.html';
+                    }, 1500);
+                } else {
+                    showMessage(`❌ Failed to save settings: ${result?.error || 'Unknown error'}`, 'error');
+                }
+                
+            } catch (err) {
+                console.error('Error saving settings:', err);
+                showMessage(`Error: ${err.message}`, 'error');
+            }
+        }
+
+        // Show message notification
+        function showMessage(text, type = 'info') {
+            // Remove any existing messages
+            const existingMessages = document.querySelectorAll('.message');
+            existingMessages.forEach(msg => msg.remove());
+
+            const message = document.createElement('div');
+            message.className = `message ${type}`;
+            message.textContent = text;
+            message.style.position = 'fixed';
+            message.style.top = '20px';
+            message.style.right = '20px';
+            message.style.zIndex = '3000';
+            document.body.appendChild(message);
+            
+            setTimeout(() => {
+                message.style.animation = 'slideOut 0.3s ease';
+                setTimeout(() => message.remove(), 300);
+            }, 3000);
+        }
+
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', async () => {
+            console.log('🚀 Initializing prize settings page...');
+            console.log('window.api available:', !!window.api);
+            
+            await loadSettings();
+            
+            // Add input event listeners
+            addInputListeners();
+            document.getElementById('thicketPrice').addEventListener('input', updateDisplay);
+
+            // Add slideOut animation
+            const style = document.createElement('style');
+            style.textContent = `
+                @keyframes slideOut {
+                    from {
+                        transform: translateX(0);
+                        opacity: 1;
+                    }
+                    to {
+                        transform: translateX(100%);
+                        opacity: 0;
+                    }
+                }
+            `;
+            document.head.appendChild(style);
+        });
+
+        // Keyboard shortcut: Escape to go back
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                window.location.href = 'menu.html';
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,1614 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="utf-8">
+    
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vip Bingo — Reports</title>
+    <script src="/js/api.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --sidebar-width: 269px;
+            --sidebar-bg: #343a40;
+            --primary: #007bff;
+            --primary-hover: #0056b3;
+            --success: #28a745;
+            --success-dark: #218838;
+            --warning: #fd7e14;
+            --warning-dark: #e8590c;
+            --danger: #dc3545;
+            --danger-dark: #b02a37;
+            --page-bg: #f4f6f9;
+            --text-main: #212529;
+            --text-muted: #6c757d;
+            --text-light: #c2c7d0;
+            --navbar-bg: #ffffff;
+            --border-light: #dee2e6;
+            --nav-height: 68px;
+            --brand-height: 60px;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        html, body { height: 100%; }
+
+        body {
+            font-family: "Source Sans 3", "Source Sans Pro",
+                         "Helvetica Neue", Arial, sans-serif;
+            color: var(--text-main);
+            background: var(--page-bg);
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* ============================================================
+           SIDEBAR
+        ============================================================ */
+        .sidebar {
+            position: fixed;
+            inset: 0 auto 0 0;
+            width: var(--sidebar-width);
+            background: var(--sidebar-bg);
+            color: var(--text-light);
+            overflow-y: auto;
+            z-index: 1000;
+            transition: transform 0.25s ease;
+        }
+
+        .sidebar::-webkit-scrollbar { width: 6px; }
+        .sidebar::-webkit-scrollbar-thumb {
+            background: #56606a;
+            border-radius: 3px;
+        }
+
+        .brand {
+            height: var(--brand-height);
+            padding: 18px 16px;
+            font-size: 20px;
+            font-weight: 700;
+            color: #dee2e6;
+            border-bottom: 1px solid #4b545c;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .brand-logo {
+            width: 26px;
+            height: 26px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #007bff, #0056b3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 800;
+            font-size: 13px;
+            flex-shrink: 0;
+        }
+
+        .sidebar-nav {
+            padding: 8px 8px 24px;
+        }
+
+        .nav-section-label {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: #6c757d;
+            padding: 12px 12px 6px;
+            font-weight: 600;
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            min-height: 43px;
+            padding: 10px 12px;
+            color: var(--text-light);
+            text-decoration: none;
+            border-radius: 4px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background 0.15s, color 0.15s;
+            user-select: none;
+            border: none;
+            background: transparent;
+            width: 100%;
+            text-align: left;
+            font-family: inherit;
+        }
+
+        .nav-item:hover:not(.active) {
+            background: #3f474e;
+            color: #e9ecef;
+        }
+
+        .nav-item.active {
+            color: white;
+            background: var(--primary);
+        }
+
+        .nav-item svg {
+            width: 18px;
+            height: 18px;
+            flex-shrink: 0;
+            stroke-width: 2;
+        }
+
+        /* ============================================================
+           MAIN WRAPPER
+        ============================================================ */
+        .main-wrapper {
+            min-height: 100vh;
+            margin-left: var(--sidebar-width);
+            display: flex;
+            flex-direction: column;
+            transition: margin-left 0.25s ease;
+        }
+
+        /* ============================================================
+           TOP NAVBAR
+        ============================================================ */
+        .top-navbar {
+            height: var(--nav-height);
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 24px;
+            background: var(--navbar-bg);
+            border-bottom: 1px solid var(--border-light);
+            position: sticky;
+            top: 0;
+            z-index: 900;
+        }
+
+        .navbar-left,
+        .navbar-right {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .icon-btn {
+            width: 38px;
+            height: 38px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            border-radius: 4px;
+            color: #6c757d;
+        }
+
+        .icon-btn:hover {
+            background: #f1f3f5;
+            color: var(--text-main);
+        }
+
+        .icon-btn svg { width: 18px; height: 18px; stroke-width: 2; }
+
+        .home-link {
+            font-size: 16px;
+            color: #6c757d;
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .home-link:hover { color: var(--primary); }
+
+        .language-button {
+            height: 41px;
+            min-width: 58px;
+            padding: 0 16px;
+            color: white;
+            background: var(--primary);
+            border: 0;
+            border-radius: 4px;
+            font-weight: 700;
+            font-size: 13px;
+            cursor: pointer;
+        }
+
+        .language-button:hover { background: var(--primary-hover); }
+
+        .user-chip {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 4px 12px 4px 4px;
+            background: #f1f3f5;
+            border-radius: 20px;
+        }
+
+        .user-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #007bff, #0056b3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 700;
+            font-size: 13px;
+        }
+
+        .user-name {
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        /* ============================================================
+           MAIN CONTENT
+        ============================================================ */
+        .main-content {
+            flex: 1;
+            padding: 20px 16px 24px;
+        }
+
+        .content-inner {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .page-title {
+            margin: 0 0 6px;
+            font-size: 29px;
+            font-weight: 400;
+        }
+
+        .breadcrumb {
+            margin-bottom: 20px;
+            font-size: 16px;
+            color: #495057;
+        }
+
+        .breadcrumb a {
+            color: var(--primary);
+            text-decoration: none;
+        }
+
+        .breadcrumb a:hover { text-decoration: underline; }
+
+        .breadcrumb .sep {
+            color: #adb5bd;
+            margin: 0 4px;
+        }
+
+        /* ============================================================
+           CARDS
+        ============================================================ */
+        .card {
+            background: white;
+            border-radius: 4px;
+            border: 1px solid var(--border-light);
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            margin-bottom: 20px;
+            overflow: hidden;
+        }
+
+        .card-header {
+            padding: 15px 20px;
+            background: #f8f9fa;
+            border-bottom: 1px solid var(--border-light);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .card-header h2 {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--text-main);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .card-body { padding: 20px; }
+
+        .badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+            background: #e9ecef;
+            color: #495057;
+        }
+
+        .badge.success { background: #d4edda; color: #155724; }
+        .badge.warning { background: #fff3cd; color: #856404; }
+        .badge.danger { background: #f8d7da; color: #721c24; }
+        .badge.info { background: #cce5ff; color: #004085; }
+
+        /* ============================================================
+           BUTTONS
+        ============================================================ */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 10px 20px;
+            font-size: 14px;
+            font-weight: 600;
+            font-family: inherit;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background 0.15s, transform 0.1s;
+            text-decoration: none;
+            color: white;
+        }
+
+        .btn:active { transform: scale(0.98); }
+        .btn-primary { background: var(--primary); }
+        .btn-primary:hover { background: var(--primary-hover); }
+        .btn-success { background: var(--success); }
+        .btn-success:hover { background: var(--success-dark); }
+        .btn-warning { background: var(--warning); }
+        .btn-warning:hover { background: var(--warning-dark); }
+        .btn-danger { background: var(--danger); }
+        .btn-danger:hover { background: var(--danger-dark); }
+
+        .btn-outline {
+            background: white;
+            color: var(--text-main);
+            border: 1px solid var(--border-light);
+        }
+        .btn-outline:hover { background: #f1f3f5; }
+
+        .btn-sm {
+            padding: 5px 12px;
+            font-size: 12px;
+        }
+
+        .btn-row {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        /* ============================================================
+           STATS GRID
+        ============================================================ */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 16px;
+            margin-bottom: 20px;
+        }
+
+        .stat-card {
+            background: white;
+            border-radius: 4px;
+            border: 1px solid var(--border-light);
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            padding: 18px 20px;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .stat-icon {
+            width: 44px;
+            height: 44px;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            color: white;
+            font-size: 20px;
+        }
+
+        .stat-icon.blue { background: #007bff; }
+        .stat-icon.green { background: #28a745; }
+        .stat-icon.orange { background: #fd7e14; }
+        .stat-icon.purple { background: #6f42c1; }
+
+        .stat-title {
+            font-size: 12px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .stat-value {
+            font-size: 22px;
+            font-weight: 700;
+            color: var(--text-main);
+            font-variant-numeric: tabular-nums;
+        }
+
+        /* ============================================================
+           FORM
+        ============================================================ */
+        .form-group label {
+            display: block;
+            margin-bottom: 6px;
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--text-main);
+        }
+
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 10px 14px;
+            font-size: 14px;
+            font-family: inherit;
+            color: var(--text-main);
+            background: white;
+            border: 1.5px solid var(--border-light);
+            border-radius: 4px;
+            outline: none;
+            transition: border-color 0.15s, box-shadow 0.15s;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(0,123,255,0.12);
+        }
+
+        /* ============================================================
+           PATTERN CHECKBOXES
+        ============================================================ */
+        .pattern-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-bottom: 16px;
+        }
+
+        .checkbox-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 12px;
+            background: #f8f9fa;
+            border: 1.5px solid var(--border-light);
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.15s;
+            font-size: 14px;
+            user-select: none;
+        }
+
+        .checkbox-item:hover {
+            background: #e9ecef;
+            border-color: #ced4da;
+        }
+
+        .checkbox-item input[type="checkbox"] {
+            width: 16px;
+            height: 16px;
+            cursor: pointer;
+            accent-color: var(--primary);
+            margin: 0;
+        }
+
+        .checkbox-item input[type="checkbox"]:checked + span {
+            font-weight: 600;
+        }
+
+        .selected-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-top: 12px;
+            padding-top: 12px;
+            border-top: 1px solid var(--border-light);
+            min-height: 36px;
+            align-items: center;
+        }
+
+        .selected-tags .tag {
+            display: inline-block;
+            padding: 4px 12px;
+            background: var(--primary);
+            color: white;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .selected-tags .empty {
+            color: var(--text-muted);
+            font-size: 13px;
+            font-style: italic;
+        }
+
+        /* ============================================================
+           TABLE
+        ============================================================ */
+        .table-container {
+            overflow-x: auto;
+            max-height: 480px;
+            overflow-y: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+        }
+
+        th {
+            text-align: left;
+            padding: 12px;
+            background: #f8f9fa;
+            color: var(--text-main);
+            font-weight: 600;
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            border-bottom: 1px solid var(--border-light);
+        }
+
+        td {
+            padding: 12px;
+            border-bottom: 1px solid #f1f3f5;
+            color: var(--text-main);
+        }
+
+        tr:hover td { background: #f8f9fa; }
+
+        .status-pill {
+            display: inline-block;
+            padding: 3px 10px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .status-running { background: #d4edda; color: #155724; }
+        .status-waiting { background: #fff3cd; color: #856404; }
+        .status-finished { background: #e2e3e5; color: #383d41; }
+        .status-paused   { background: #cce5ff; color: #004085; }
+
+        /* ============================================================
+           REPORTS (3 columns)
+        ============================================================ */
+        .reports-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .report-stat-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+        }
+
+        .report-stat {
+            text-align: center;
+            padding: 12px;
+            background: #f8f9fa;
+            border-radius: 4px;
+            border: 1px solid var(--border-light);
+        }
+
+        .report-stat .label {
+            font-size: 11px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            font-weight: 600;
+            margin-bottom: 6px;
+        }
+
+        .report-stat .value {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--text-main);
+            font-variant-numeric: tabular-nums;
+        }
+
+        /* ============================================================
+           FOOTER
+        ============================================================ */
+        .app-footer {
+            min-height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            padding: 10px 24px;
+            background: white;
+            border-top: 1px solid var(--border-light);
+            color: var(--text-muted);
+            font-size: 14px;
+        }
+
+        .app-footer a {
+            color: var(--primary);
+            text-decoration: none;
+        }
+
+        /* ============================================================
+           TOAST
+        ============================================================ */
+        .toast-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 3000;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .toast {
+            background: white;
+            border-left: 4px solid var(--primary);
+            padding: 12px 18px;
+            border-radius: 4px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            font-size: 14px;
+            color: var(--text-main);
+            min-width: 240px;
+            animation: slideIn 0.25s ease;
+        }
+
+        .toast.success { border-left-color: var(--success); }
+        .toast.error { border-left-color: var(--danger); }
+        .toast.warning { border-left-color: var(--warning); }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateX(20px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        /* ============================================================
+           RESPONSIVE
+        ============================================================ */
+        @media (max-width: 1199px) {
+            .stats-grid { grid-template-columns: repeat(2, 1fr); }
+            .reports-grid { grid-template-columns: 1fr; }
+            .pattern-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+
+        @media (max-width: 991px) {
+            .sidebar { transform: translateX(-100%); }
+            .sidebar.open {
+                transform: translateX(0);
+                box-shadow: 4px 0 12px rgba(0,0,0,0.2);
+            }
+            .main-wrapper { margin-left: 0; }
+        }
+
+        @media (max-width: 767px) {
+            .top-navbar { padding: 0 12px; }
+            .navbar-left, .navbar-right { gap: 12px; }
+            .home-link { display: none; }
+            .user-name { display: none; }
+            .stats-grid { grid-template-columns: 1fr; }
+            .pattern-grid { grid-template-columns: 1fr; }
+            .page-title { font-size: 22px; }
+            .app-footer {
+                flex-direction: column;
+                align-items: flex-start;
+                padding: 12px;
+                font-size: 13px;
+            }
+        }
+
+        .sidebar-backdrop {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 999;
+        }
+        .sidebar-backdrop.show { display: block; }
+    </style>
+</head>
+<body>
+
+<!-- ============================================================
+     SIDEBAR
+============================================================ -->
+<aside class="sidebar" id="sidebar">
+    <div class="brand">
+        <div class="brand-logo">A</div>
+        <span>Vip Bingo</span>
+    </div>
+
+    <nav class="sidebar-nav">
+        <div class="nav-section-label">Main Menu</div>
+
+        <a href="/menu.html" class="nav-item">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 14a2 2 0 1 0 0-4 2 2 0 0 0 0 4z"></path>
+                <path d="M12 2v2"></path>
+                <path d="m4.93 4.93 1.41 1.41"></path>
+                <path d="M2 12h2"></path>
+                <path d="m4.93 19.07 1.41-1.41"></path>
+                <path d="M12 20v2"></path>
+                <path d="m19.07 19.07-1.41-1.41"></path>
+                <path d="M22 12h-2"></path>
+                <path d="m19.07 4.93-1.41 1.41"></path>
+            </svg>
+            <span>Dashboard</span>
+        </a>
+
+        <a href="/register.html" class="nav-item">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z"></path>
+            </svg>
+            <span>Register Tickets</span>
+        </a>
+
+        <a href="/game.html" class="nav-item">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+                <polygon points="5 3 19 12 5 21 5 3"></polygon>
+            </svg>
+            <span>Play Game</span>
+        </a>
+
+        <a href="/admin.html" class="nav-item">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+            </svg>
+            <span>Admin Panel</span>
+        </a>
+
+        <a href="/index.html" class="nav-item active">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M3 3v18h18"></path>
+                <path d="M18 17V9"></path>
+                <path d="M13 17V5"></path>
+                <path d="M8 17v-3"></path>
+            </svg>
+            <span>Reports</span>
+        </a>
+
+        <a href="/settings.html" class="nav-item">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="3"></circle>
+                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+            </svg>
+            <span>Settings</span>
+        </a>
+
+        <button type="button" class="nav-item" onclick="logout()" style="margin-top: 8px;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                <polyline points="16 17 21 12 16 7"></polyline>
+                <line x1="21" y1="12" x2="9" y2="12"></line>
+            </svg>
+            <span>Logout</span>
+        </button>
+    </nav>
+</aside>
+
+<div class="sidebar-backdrop" id="sidebarBackdrop" onclick="toggleSidebar()"></div>
+
+<!-- ============================================================
+     MAIN WRAPPER
+============================================================ -->
+<div class="main-wrapper">
+
+    <header class="top-navbar">
+        <div class="navbar-left">
+            <button class="icon-btn" onclick="toggleSidebar()" aria-label="Toggle sidebar">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="3" y1="6" x2="21" y2="6"></line>
+                    <line x1="3" y1="12" x2="21" y2="12"></line>
+                    <line x1="3" y1="18" x2="21" y2="18"></line>
+                </svg>
+            </button>
+            <a href="/menu.html" class="home-link">Home</a>
+            <button class="language-button" onclick="cycleLanguage()" id="langBtn">ENG</button>
+        </div>
+
+        <div class="navbar-right">
+            <button class="icon-btn" onclick="loadAllData()" aria-label="Refresh">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 12a9 9 0 1 1-2.64-6.36"></path>
+                    <polyline points="21 3 21 9 15 9"></polyline>
+                </svg>
+            </button>
+            <button class="icon-btn" onclick="toggleFullscreen()" aria-label="Fullscreen">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M8 3H5a2 2 0 0 0-2 2v3"></path>
+                    <path d="M21 8V5a2 2 0 0 0-2-2h-3"></path>
+                    <path d="M3 16v3a2 2 0 0 0 2 2h3"></path>
+                    <path d="M16 21h3a2 2 0 0 0 2-2v-3"></path>
+                </svg>
+            </button>
+
+            <div class="user-chip">
+                <div class="user-avatar" id="userAvatar">?</div>
+                <span class="user-name" id="userName">User</span>
+            </div>
+        </div>
+    </header>
+
+    <main class="main-content">
+        <div class="content-inner">
+
+            <h1 class="page-title">Reports &amp; Configuration</h1>
+            <div class="breadcrumb">
+                <a href="/menu.html">Home</a>
+                <span class="sep">/</span>
+                <span>Reports</span>
+            </div>
+
+            <!-- ============================================================
+                 WINNING PATTERN CONFIGURATION
+            ============================================================ -->
+            <div class="card">
+                <div class="card-header">
+                    <h2>🎯 Winning Pattern Configuration</h2>
+                    <span class="badge info">Select multiple patterns</span>
+                </div>
+                <div class="card-body">
+                    <label style="display:block; font-size:12px; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.05em; font-weight:600; margin-bottom:10px;">
+                        Select Winning Patterns
+                    </label>
+                    <div class="pattern-grid">
+                        <label class="checkbox-item"><input type="checkbox" id="patternHorizontal" value="horizontal"><span>Horizontal Line</span></label>
+                        <label class="checkbox-item"><input type="checkbox" id="patternVertical" value="vertical"><span>Vertical Line</span></label>
+                        <label class="checkbox-item"><input type="checkbox" id="patternDiagonal" value="diagonal"><span>Diagonal Line</span></label>
+                        <label class="checkbox-item"><input type="checkbox" id="patternFourCorners" value="four_corners"><span>Four Corners</span></label>
+                        <label class="checkbox-item"><input type="checkbox" id="patternFullHouse" value="full_house"><span>Full House</span></label>
+                        <label class="checkbox-item"><input type="checkbox" id="patternXPattern" value="x_pattern"><span>X Pattern</span></label>
+                        <label class="checkbox-item"><input type="checkbox" id="patternOuterFrame" value="outer_frame"><span>Outer Frame</span></label>
+                        <label class="checkbox-item"><input type="checkbox" id="patternSmallCenter" value="small_center"><span>Small Center</span></label>
+                        <label class="checkbox-item"><input type="checkbox" id="patternBlackout" value="blackout"><span>Blackout</span></label>
+                    </div>
+
+                    <div class="selected-tags" id="selectedPatternsList">
+                        <span class="empty">None selected</span>
+                    </div>
+
+                    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:16px; margin-top:20px; align-items:end;">
+                        <div class="form-group">
+                            <label>Lines Required to Win</label>
+                            <select id="linesRequiredSelect">
+                                <option value="1">1 Pattern</option>
+                                <option value="2">2 Patterns</option>
+                                <option value="3">3 Patterns</option>
+                                <option value="4">4 Patterns</option>
+                                <option value="5">5+ Patterns</option>
+                            </select>
+                        </div>
+                        <button class="btn btn-primary" onclick="savePatternSettings()" style="height:42px;">
+                            💾 Save Pattern Settings
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ============================================================
+                 GAME HISTORY
+            ============================================================ -->
+            <div class="card">
+                <div class="card-header">
+                    <h2>🎮 Game History &amp; Reports</h2>
+                    <div class="btn-row">
+                        <button class="btn btn-outline btn-sm" onclick="loadGameReports()">🔄 Refresh</button>
+                        <button class="btn btn-danger btn-sm" onclick="endCurrentGame()">🏁 End Current Game</button>
+                        <button class="btn btn-warning btn-sm" onclick="exportGamesToPDF()">📄 Export PDF</button>
+                    </div>
+                </div>
+                <div class="card-body" style="padding:0;">
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Game ID</th>
+                                    <th>Game Number</th>
+                                    <th>Date &amp; Time</th>
+                                    <th>Status</th>
+                                    <th>Tickets</th>
+                                    <th>Sales</th>
+                                    <th>Commission</th>
+                                    <th>Winner Prize</th>
+                                    <th>House Share</th>
+                                    <th>Winners</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="gameReportsTable">
+                                <tr><td colspan="11" style="text-align: center; padding: 30px;">Loading game reports…</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ============================================================
+                 SUMMARY STATS
+            ============================================================ -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-icon blue">🎮</div>
+                    <div>
+                        <div class="stat-title">Total Games</div>
+                        <div class="stat-value" id="totalGames">0</div>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon green">🎫</div>
+                    <div>
+                        <div class="stat-title">Tickets Sold</div>
+                        <div class="stat-value" id="totalTickets">0</div>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon orange">💰</div>
+                    <div>
+                        <div class="stat-title">Total Revenue</div>
+                        <div class="stat-value" id="totalRevenue">0 Br</div>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon purple">🏆</div>
+                    <div>
+                        <div class="stat-title">Total Winners</div>
+                        <div class="stat-value" id="totalWinners">0</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ============================================================
+                 DAILY / WEEKLY / MONTHLY
+            ============================================================ -->
+            <div class="card">
+                <div class="card-header">
+                    <h2>🗓️ Report by Date Range</h2>
+                </div>
+                <div class="card-body">
+                    <div class="range-controls">
+                        <div class="form-group">
+                            <label for="rangeFrom">From</label>
+                            <input type="date" id="rangeFrom">
+                        </div>
+                        <div class="form-group">
+                            <label for="rangeTo">To</label>
+                            <input type="date" id="rangeTo">
+                        </div>
+                        <button class="btn btn-primary" id="rangeShowBtn" onclick="loadRangeReport()">Show</button>
+                    </div>
+                    <div class="range-caption" id="rangeCaption"></div>
+                    <div class="report-stat-grid range-stats" id="rangeStats">
+                        <div class="report-stat"><div class="label">Total Games</div><div class="value">0</div></div>
+                        <div class="report-stat"><div class="label">Total Cards</div><div class="value">0</div></div>
+                        <div class="report-stat"><div class="label">Total Commission</div><div class="value">0.00 Br</div></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="reports-grid">
+                <div class="card">
+                    <div class="card-header">
+                        <h2>📅 Daily Report</h2>
+                        <button class="btn btn-danger btn-sm" onclick="exportDailyToPDF()">Export PDF</button>
+                    </div>
+                    <div class="card-body">
+                        <div class="report-stat-grid" id="dailyStats">
+                            <div class="report-stat"><div class="label">Games</div><div class="value">0</div></div>
+                            <div class="report-stat"><div class="label">Tickets</div><div class="value">0</div></div>
+                            <div class="report-stat"><div class="label">Revenue</div><div class="value">0 Br</div></div>
+                            <div class="report-stat"><div class="label">House Profit</div><div class="value">0 Br</div></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h2>📆 Weekly Report</h2>
+                        <button class="btn btn-danger btn-sm" onclick="exportWeeklyToPDF()">Export PDF</button>
+                    </div>
+                    <div class="card-body">
+                        <div class="report-stat-grid" id="weeklyStats">
+                            <div class="report-stat"><div class="label">Games</div><div class="value">0</div></div>
+                            <div class="report-stat"><div class="label">Tickets</div><div class="value">0</div></div>
+                            <div class="report-stat"><div class="label">Revenue</div><div class="value">0 Br</div></div>
+                            <div class="report-stat"><div class="label">House Profit</div><div class="value">0 Br</div></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h2>📊 Monthly Report</h2>
+                        <button class="btn btn-danger btn-sm" onclick="exportMonthlyToPDF()">Export PDF</button>
+                    </div>
+                    <div class="card-body">
+                        <div class="report-stat-grid" id="monthlyStats">
+                            <div class="report-stat"><div class="label">Games</div><div class="value">0</div></div>
+                            <div class="report-stat"><div class="label">Tickets</div><div class="value">0</div></div>
+                            <div class="report-stat"><div class="label">Revenue</div><div class="value">0 Br</div></div>
+                            <div class="report-stat"><div class="label">House Profit</div><div class="value">0 Br</div></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <footer class="app-footer">
+        <span>Copyright © 2026, <a href="#">Colink Software Development PLC</a>. All rights reserved.</span>
+        <span>Version 1.0.0</span>
+    </footer>
+</div>
+
+<div class="toast-container" id="toastContainer"></div>
+
+<script>
+    /* ============================================================
+       STATE
+    ============================================================ */
+    let cachedGames = [];
+    let cachedDailyReport = null;
+    let cachedWeeklyReport = null;
+    let cachedMonthlyReport = null;
+    let selectedPatterns = [];
+    let patternsRequired = 1;
+    const LANGUAGES = ['ENG', 'AMH', 'ORM'];
+    let currentLangIndex = 0;
+    let currentUser = null;
+
+    // Commission cache — refreshed from the server
+    let commissionConfig = {
+        mode: 'auto',
+        tier: 0,
+        rate: 10,
+        tiers: [
+            { tier: 0, min: 0,    max: 499,  rate: 10 },
+            { tier: 1, min: 500,  max: 1000, rate: 15 },
+            { tier: 2, min: 1100, max: 1500, rate: 30 },
+            { tier: 3, min: 1600, max: 3000, rate: 35 },
+            { tier: 4, min: 3100, max: 6000, rate: 40 }
+        ]
+    };
+
+    const patternNames = {
+        horizontal: 'Horizontal Line',
+        vertical: 'Vertical Line',
+        diagonal: 'Diagonal Line',
+        four_corners: 'Four Corners',
+        full_house: 'Full House',
+        x_pattern: 'X Pattern',
+        outer_frame: 'Outer Frame',
+        small_center: 'Small Center',
+        blackout: 'Blackout'
+    };
+
+    /* ============================================================
+       TOAST
+    ============================================================ */
+    function showNotification(message, type = 'info') {
+        const container = document.getElementById('toastContainer');
+        const toast = document.createElement('div');
+        toast.className = `toast ${type}`;
+        toast.textContent = message;
+        container.appendChild(toast);
+        setTimeout(() => {
+            toast.style.opacity = '0';
+            toast.style.transition = 'opacity 0.3s';
+            setTimeout(() => toast.remove(), 300);
+        }, 2800);
+    }
+
+    /* ============================================================
+       SIDEBAR / UI
+    ============================================================ */
+    function toggleSidebar() {
+        document.getElementById('sidebar').classList.toggle('open');
+        document.getElementById('sidebarBackdrop').classList.toggle('show');
+    }
+
+    function toggleFullscreen() {
+        if (!document.fullscreenElement) document.documentElement.requestFullscreen().catch(() => {});
+        else document.exitFullscreen();
+    }
+
+    function cycleLanguage() {
+        currentLangIndex = (currentLangIndex + 1) % LANGUAGES.length;
+        document.getElementById('langBtn').textContent = LANGUAGES[currentLangIndex];
+        showNotification(`Language: ${LANGUAGES[currentLangIndex]}`, 'info');
+    }
+
+    async function logout() {
+        if (!confirm('Log out of Vip Bingo?')) return;
+        try { await window.api.logout(); } catch {}
+        window.location.href = '/login.html';
+    }
+
+    /* ============================================================
+       SESSION GUARD
+    ============================================================ */
+    async function verifySession() {
+        try {
+            const me = await window.api.me();
+            if (!me?.success || !me.user) {
+                window.location.href = '/login.html';
+                return false;
+            }
+            currentUser = me.user;
+            document.getElementById('userName').textContent =
+                currentUser.full_name || currentUser.username || 'User';
+            document.getElementById('userAvatar').textContent =
+                (currentUser.username || '?')[0].toUpperCase();
+            return true;
+        } catch (e) {
+            window.location.href = '/login.html';
+            return false;
+        }
+    }
+
+    /* ============================================================
+       COMMISSION — resolve tier from sales
+       Mirrors server logic in commissionService.resolveTier()
+       ============================================================ */
+    function resolveTierForSales(sales) {
+        // Manual override wins
+        if (commissionConfig.mode === 'manual' && commissionConfig.tier != null) {
+            const manual = commissionConfig.tiers.find(t => t.tier === commissionConfig.tier);
+            if (manual) return { mode: 'manual', ...manual, source: 'admin override' };
+        }
+
+        // Below floor → Tier 0
+        if (sales <= 499) {
+            const t0 = commissionConfig.tiers.find(t => t.tier === 0);
+            return t0 ? { mode: 'auto', ...t0, source: 'auto (below 500)' } : null;
+        }
+
+        // Exact match
+        for (const t of commissionConfig.tiers) {
+            if (sales >= t.min && sales <= t.max) {
+                return { mode: 'auto', ...t, source: `auto (${t.min}–${t.max})` };
+            }
+        }
+
+        // Gap — round down to highest tier whose min <= sales
+        const below = commissionConfig.tiers
+            .filter(t => sales >= t.min)
+            .sort((a, b) => b.min - a.min);
+        if (below.length) return { mode: 'auto', ...below[0], source: `auto (gap → ${below[0].min}+)` };
+
+        // Fallback
+        const t0 = commissionConfig.tiers.find(t => t.tier === 0);
+        return t0 ? { mode: 'auto', ...t0, source: 'default' } : null;
+    }
+
+    /**
+     * Prize calculation — commission-tier based only.
+     * The old prize_distribution_winner / prize_distribution_house settings
+     * are NOT used anymore.
+     *
+     *   commission  = sales × commissionRate%   (from tier, or manual override)
+     *   winnerPrize = sales − commission        (winner gets the WHOLE net)
+     *   houseShare  = commission                (house keeps exactly the commission)
+     */
+    function computePrize(sales) {
+        const tier = resolveTierForSales(sales);
+        const commissionRate = tier ? tier.rate : 0;
+        const commissionAmount = sales * (commissionRate / 100);
+
+        const winnerPrize = sales - commissionAmount;
+        const houseShare = commissionAmount;
+
+        return {
+            tier: tier ? tier.tier : 0,
+            commissionRate,
+            commissionAmount,
+            winnerPrize,
+            houseShare,
+            source: tier ? tier.source : 'n/a'
+        };
+    }
+
+    /* ============================================================
+       PATTERNS
+    ============================================================ */
+    function updateSelectedPatternsDisplay() {
+        const container = document.getElementById('selectedPatternsList');
+        const checkboxes = document.querySelectorAll('.checkbox-item input[type="checkbox"]');
+
+        selectedPatterns = [];
+        checkboxes.forEach(cb => { if (cb.checked) selectedPatterns.push(cb.value); });
+
+        if (selectedPatterns.length === 0) {
+            container.innerHTML = '<span class="empty">None selected</span>';
+            return;
+        }
+
+        container.innerHTML = selectedPatterns
+            .map(p => `<span class="tag">${patternNames[p] || p}</span>`)
+            .join('');
+    }
+
+    async function savePatternSettings() {
+        const checkboxes = document.querySelectorAll('.checkbox-item input[type="checkbox"]');
+        selectedPatterns = [];
+        checkboxes.forEach(cb => { if (cb.checked) selectedPatterns.push(cb.value); });
+
+        if (selectedPatterns.length === 0) {
+            return showNotification('Please select at least one pattern', 'warning');
+        }
+
+        patternsRequired = parseInt(document.getElementById('linesRequiredSelect').value);
+        const patternsString = selectedPatterns.join(',');
+
+        localStorage.setItem('bingo_winning_patterns', patternsString);
+        localStorage.setItem('bingo_patterns_required', patternsRequired);
+
+        try {
+            const result = await window.api.updateSettings({
+                winning_patterns: patternsString,
+                patterns_required: patternsRequired
+            });
+            if (result?.success) {
+                showNotification(`✅ Pattern settings saved (${selectedPatterns.length} patterns)`, 'success');
+            } else {
+                showNotification('Pattern settings saved locally', 'success');
+            }
+        } catch (e) {
+            showNotification('Pattern settings saved locally', 'success');
+        }
+
+        updateSelectedPatternsDisplay();
+    }
+
+    async function loadPatternSettings() {
+        try {
+            const settings = await window.api.getSettings();
+            if (settings) {
+                if (settings.winning_patterns) {
+                    const patterns = settings.winning_patterns.split(',');
+                    document.querySelectorAll('.checkbox-item input[type="checkbox"]').forEach(cb => {
+                        cb.checked = patterns.includes(cb.value);
+                    });
+                    selectedPatterns = patterns.filter(p => p.trim());
+                    updateSelectedPatternsDisplay();
+                }
+                if (settings.patterns_required) {
+                    patternsRequired = settings.patterns_required;
+                    const sel = document.getElementById('linesRequiredSelect');
+                    if (sel) sel.value = patternsRequired;
+                }
+            }
+
+            const savedPatterns = localStorage.getItem('bingo_winning_patterns');
+            const savedRequired = localStorage.getItem('bingo_patterns_required');
+            if (savedPatterns) {
+                const patterns = savedPatterns.split(',');
+                document.querySelectorAll('.checkbox-item input[type="checkbox"]').forEach(cb => {
+                    cb.checked = patterns.includes(cb.value);
+                });
+                selectedPatterns = patterns.filter(p => p.trim());
+                updateSelectedPatternsDisplay();
+            }
+            if (savedRequired) {
+                patternsRequired = parseInt(savedRequired);
+                const sel = document.getElementById('linesRequiredSelect');
+                if (sel) sel.value = patternsRequired;
+            }
+        } catch (e) {
+            console.error('Error loading pattern settings:', e);
+        }
+    }
+
+    /* ============================================================
+       COMMISSION CONFIG — pull from server
+    ============================================================ */
+    async function loadCommissionConfig() {
+        try {
+            const cfg = await window.api.getCommissionTier?.();
+            if (cfg) {
+                commissionConfig.mode = cfg.mode || 'auto';
+                commissionConfig.tier = cfg.tier ?? 0;
+                if (Array.isArray(cfg.tiers) && cfg.tiers.length) {
+                    commissionConfig.tiers = cfg.tiers.map(t => ({
+                        tier: t.tier,
+                        min: t.min,
+                        max: t.max,
+                        rate: t.rate ?? t.pct ?? 0
+                    }));
+                }
+            }
+        } catch (e) {
+            // Non-admins may get 403 — fall back to defaults
+            console.warn('Commission config unavailable, using defaults');
+        }
+    }
+
+    /* ============================================================
+       END GAME
+    ============================================================ */
+    async function endCurrentGame() {
+        if (!confirm('End the current running game?')) return;
+        try {
+            const running = await window.api.getRunningGame();
+            if (!running?.id) return showNotification('No running game', 'warning');
+            const r = await window.api.finishGame(running.id, 'Admin ended from Reports');
+            if (r?.success) {
+                showNotification('✅ Game ended', 'success');
+                await loadGameReports();
+            } else {
+                showNotification('Failed: ' + (r?.error || 'unknown'), 'error');
+            }
+        } catch (e) {
+            showNotification('Error: ' + e.message, 'error');
+        }
+    }
+
+    async function endSpecificGame(gameId) {
+        if (!confirm(`End game #${gameId}?`)) return;
+        try {
+            const r = await window.api.finishGame(gameId, 'Admin ended from Reports');
+            if (r?.success) {
+                showNotification(`✅ Game #${gameId} ended`, 'success');
+                await loadGameReports();
+            } else {
+                showNotification('Failed: ' + (r?.error || 'unknown'), 'error');
+            }
+        } catch (e) {
+            showNotification('Error: ' + e.message, 'error');
+        }
+    }
+
+    /* ============================================================
+       GAME REPORTS — uses the tier-based prize formula
+    ============================================================ */
+    async function loadGameReports() {
+        try {
+            const games = await window.api.getAllGames() || [];
+            cachedGames = games;
+            const tbody = document.getElementById('gameReportsTable');
+            tbody.innerHTML = '';
+
+            if (!games.length) {
+                tbody.innerHTML = '<tr><td colspan="11" style="text-align:center; padding: 30px;">No games found</td></tr>';
+                document.getElementById('totalGames').textContent = '0';
+                document.getElementById('totalTickets').textContent = '0';
+                document.getElementById('totalRevenue').textContent = '0 Br';
+                document.getElementById('totalWinners').textContent = '0';
+                return;
+            }
+
+            let totalTickets = 0;
+            let totalRevenue = 0;
+            let totalWinners = 0;
+
+            games.forEach(game => {
+                const totalSales = game.total_sales || 0;
+                const tickets = game.total_cards || game.ticket_count || 0;
+
+                totalTickets += tickets;
+                totalRevenue += totalSales;
+                totalWinners += game.winner_count || 0;
+
+                const gameDate = game.start_time || game.created_at;
+                const formattedDate = gameDate ? new Date(gameDate).toLocaleString() : 'Unknown';
+                const status = game.status || 'unknown';
+                const statusClass =
+                    status === 'running' ? 'status-running' :
+                    status === 'waiting' ? 'status-waiting' :
+                    status === 'paused'  ? 'status-paused'  :
+                    'status-finished';
+
+                // ── Tier-based prize math ──
+                const calc = computePrize(totalSales);
+
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${game.id || 'N/A'}</td>
+                    <td>${game.game_number || 'N/A'}</td>
+                    <td>${formattedDate}</td>
+                    <td><span class="status-pill ${statusClass}">${status}</span></td>
+                    <td>${tickets}</td>
+                    <td>${totalSales.toFixed(2)} Br</td>
+                    <td>${calc.commissionAmount.toFixed(2)} Br <small style="color:var(--text-muted);">(${calc.commissionRate}%)</small></td>
+                    <td>${calc.winnerPrize.toFixed(2)} Br</td>
+                    <td>${calc.houseShare.toFixed(2)} Br</td>
+                    <td>${game.winner_count || 0}</td>
+                    <td>${status === 'running' ? `<button class="btn btn-danger btn-sm" onclick="endSpecificGame(${game.id})">🏁 End</button>` : '—'}</td>
+                `;
+                tbody.appendChild(row);
+            });
+
+            document.getElementById('totalGames').textContent = games.length;
+            document.getElementById('totalTickets').textContent = totalTickets;
+            document.getElementById('totalRevenue').textContent = `${totalRevenue.toFixed(2)} Br`;
+            document.getElementById('totalWinners').textContent = totalWinners;
+        } catch (e) {
+            console.error('Error loading game reports:', e);
+            document.getElementById('gameReportsTable').innerHTML =
+                '<tr><td colspan="11" style="text-align:center; padding:30px;">Error loading games</td></tr>';
+        }
+    }
+
+    /* ============================================================
+       DAILY / WEEKLY / MONTHLY
+       Uses the same computePrize() so the house profit reflects
+       commission-only retention.
+    ============================================================ */
+    async function loadReports() {
+        try {
+            const today = new Date().toISOString().split('T')[0];
+            const daily = await window.api.getDailyReport(today);
+            if (daily?.success) {
+                cachedDailyReport = daily.report;
+                const r = daily.report;
+                const sales = r.total_sales || 0;
+                const calc = computePrize(sales);
+                document.getElementById('dailyStats').innerHTML = `
+                    <div class="report-stat"><div class="label">Games</div><div class="value">${r.total_games || 0}</div></div>
+                    <div class="report-stat"><div class="label">Tickets</div><div class="value">${r.total_tickets_sold || 0}</div></div>
+                    <div class="report-stat"><div class="label">Revenue</div><div class="value">${sales.toFixed(2)} Br</div></div>
+                    <div class="report-stat"><div class="label">House Profit</div><div class="value">${calc.houseShare.toFixed(2)} Br</div></div>
+                `;
+            }
+
+            const weekStart = new Date();
+            weekStart.setDate(weekStart.getDate() - 7);
+            const weekly = await window.api.getWeeklyReport(weekStart.toISOString().split('T')[0]);
+            if (weekly?.success) {
+                cachedWeeklyReport = weekly.report;
+                const r = weekly.report;
+                const sales = r.total_sales || 0;
+                const calc = computePrize(sales);
+                document.getElementById('weeklyStats').innerHTML = `
+                    <div class="report-stat"><div class="label">Games</div><div class="value">${r.total_games || 0}</div></div>
+                    <div class="report-stat"><div class="label">Tickets</div><div class="value">${r.total_tickets_sold || 0}</div></div>
+                    <div class="report-stat"><div class="label">Revenue</div><div class="value">${sales.toFixed(2)} Br</div></div>
+                    <div class="report-stat"><div class="label">House Profit</div><div class="value">${calc.houseShare.toFixed(2)} Br</div></div>
+                `;
+            }
+
+            const now = new Date();
+            const monthly = await window.api.getMonthlyReport(now.getFullYear(), now.getMonth() + 1);
+            if (monthly?.success) {
+                cachedMonthlyReport = monthly.report;
+                const r = monthly.report;
+                const sales = r.total_sales || 0;
+                const calc = computePrize(sales);
+                document.getElementById('monthlyStats').innerHTML = `
+                    <div class="report-stat"><div class="label">Games</div><div class="value">${r.total_games || 0}</div></div>
+                    <div class="report-stat"><div class="label">Tickets</div><div class="value">${r.total_tickets_sold || 0}</div></div>
+                    <div class="report-stat"><div class="label">Revenue</div><div class="value">${sales.toFixed(2)} Br</div></div>
+                    <div class="report-stat"><div class="label">House Profit</div><div class="value">${calc.houseShare.toFixed(2)} Br</div></div>
+                `;
+            }
+        } catch (e) {
+            console.error('Error loading reports:', e);
+        }
+    }
+
+    /* ============================================================
+       PDF EXPORT
+    ============================================================ */
+    function exportGamesToPDF() {
+        if (!cachedGames.length) return showNotification('No game data to export', 'warning');
+        window.open('/api/pdf/games', '_blank');
+    }
+
+    function exportDailyToPDF() {
+        const today = new Date().toISOString().split('T')[0];
+        window.open(`/api/pdf/daily?date=${today}`, '_blank');
+    }
+
+    function exportWeeklyToPDF() {
+        const start = new Date(Date.now() - 7 * 86400000).toISOString().split('T')[0];
+        window.open(`/api/pdf/weekly?start=${start}`, '_blank');
+    }
+
+    function exportMonthlyToPDF() {
+        const now = new Date();
+        window.open(`/api/pdf/monthly?year=${now.getFullYear()}&month=${now.getMonth() + 1}`, '_blank');
+    }
+
+    /* ============================================================
+       LOAD ALL
+    ============================================================ */
+    async function loadAllData() {
+        try {
+            await loadCommissionConfig();
+            await Promise.all([
+                loadPatternSettings(),
+                loadGameReports(),
+                loadReports()
+            ]);
+        } catch (e) {
+            console.error('Load error:', e);
+        }
+    }
+
+    /* ============================================================
+       INIT
+    ============================================================ */
+    document.addEventListener('DOMContentLoaded', async () => {
+        const ok = await verifySession();
+        if (!ok) return;
+
+        // Pattern checkbox listeners
+        document.querySelectorAll('.checkbox-item input[type="checkbox"]').forEach(cb => {
+            cb.addEventListener('change', updateSelectedPatternsDisplay);
+        });
+
+        await loadAllData();
+
+        // Close mobile sidebar on link click
+        document.querySelectorAll('.sidebar-nav a').forEach(a => {
+            a.addEventListener('click', () => {
+                if (window.innerWidth < 992) {
+                    document.getElementById('sidebar').classList.remove('open');
+                    document.getElementById('sidebarBackdrop').classList.remove('show');
+                }
+            });
+        });
+    });
+</script>
+
+<style>
+    .range-controls { display: flex; gap: 12px; align-items: flex-end; flex-wrap: wrap; margin-bottom: 14px; }
+    .range-controls .form-group { margin-bottom: 0; flex: 1 1 160px; }
+    .range-controls .btn { height: 41px; min-width: 110px; }
+    .range-stats { grid-template-columns: repeat(3, 1fr); }
+    .range-caption { font-size: 13px; color: var(--text-muted); margin-bottom: 10px; min-height: 18px; }
+    @media (max-width: 640px) { .range-stats { grid-template-columns: 1fr; } }
+</style>
+<script>
+(function () {
+    const pad = (n) => String(n).padStart(2, "0");
+    const today = new Date();
+    const iso = `${today.getFullYear()}-${pad(today.getMonth() + 1)}-${pad(today.getDate())}`;
+    const fromEl = document.getElementById("rangeFrom");
+    const toEl = document.getElementById("rangeTo");
+    if (fromEl && !fromEl.value) fromEl.value = iso;
+    if (toEl && !toEl.value) toEl.value = iso;
+})();
+
+async function loadRangeReport() {
+    const from = document.getElementById("rangeFrom").value;
+    const to = document.getElementById("rangeTo").value;
+    const caption = document.getElementById("rangeCaption");
+    const btn = document.getElementById("rangeShowBtn");
+    if (!from || !to) { caption.textContent = "Choose both a start and an end date."; return; }
+    btn.disabled = true;
+    caption.textContent = "Loading…";
+    try {
+        const res = await http("GET", `/api/reports/range?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`);
+        if (!res || !res.success) throw new Error((res && res.error) || "Report failed");
+        const r = res.report;
+        const fmt = (n, d) => Number(n || 0).toLocaleString(undefined, { minimumFractionDigits: d, maximumFractionDigits: d });
+        document.getElementById("rangeStats").innerHTML = `
+            <div class="report-stat"><div class="label">Total Games</div><div class="value">${fmt(r.total_games, 0)}</div></div>
+            <div class="report-stat"><div class="label">Total Cards</div><div class="value">${fmt(r.total_cards, 0)}</div></div>
+            <div class="report-stat"><div class="label">Total Commission</div><div class="value">${fmt(r.total_commission, 2)} Br</div></div>`;
+        caption.textContent = r.from === r.to ? `For ${r.from}` : `From ${r.from} to ${r.to}`;
+    } catch (e) {
+        caption.textContent = "Could not load the report: " + e.message;
+    } finally {
+        btn.disabled = false;
+    }
+}
+
+loadRangeReport();
+</script>
+</body>
+</html>
