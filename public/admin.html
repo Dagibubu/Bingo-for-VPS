@@ -1386,6 +1386,44 @@
             </div>
 
             <!-- ============================================================
+                 WINNING PATTERNS
+            ============================================================ -->
+            <div class="card">
+                <div class="card-header">
+                    <h2>🎯 Winning Patterns</h2>
+                    <span class="badge info" id="patternsBadge">—</span>
+                </div>
+                <div class="card-body">
+                    <div style="font-size:14px; margin-bottom:12px;">
+                        <strong>Active now:</strong> <span id="patternsActive">loading…</span>
+                    </div>
+                    <div id="patternChecks" style="display:grid; grid-template-columns:repeat(auto-fill,minmax(170px,1fr)); gap:10px;">
+                        <label style="display:flex; gap:8px; align-items:center; cursor:pointer;"><input type="checkbox" value="horizontal"> Horizontal line (row)</label>
+                        <label style="display:flex; gap:8px; align-items:center; cursor:pointer;"><input type="checkbox" value="vertical"> Vertical line (column)</label>
+                        <label style="display:flex; gap:8px; align-items:center; cursor:pointer;"><input type="checkbox" value="diagonal"> Diagonal line</label>
+                        <label style="display:flex; gap:8px; align-items:center; cursor:pointer;"><input type="checkbox" value="four_corners"> Four corners</label>
+                        <label style="display:flex; gap:8px; align-items:center; cursor:pointer;"><input type="checkbox" value="full_house"> Full house (every number)</label>
+                    </div>
+                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-top:18px;">
+                        <div class="form-group">
+                            <label for="patternsRequiredSelect">Patterns needed to win</label>
+                            <select id="patternsRequiredSelect">
+                                <option value="1">1 pattern</option>
+                                <option value="2">2 patterns</option>
+                                <option value="3">3 patterns</option>
+                                <option value="4">4 patterns</option>
+                                <option value="5">5 patterns</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="btn-row" style="margin-top: 18px;">
+                        <button class="btn btn-primary" onclick="saveWinningPatterns()">💾 Save Patterns</button>
+                        <button class="btn btn-outline" onclick="loadWinningPatterns(true)">↺ Refresh</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ============================================================
                  CALLING INTERVAL (NEW)
             ============================================================ -->
             <div class="card">
@@ -1869,6 +1907,64 @@
        Reads / writes settings.draw_interval (stored in ms by the
        backend; we show it as seconds).
     ============================================================ */
+    const PATTERN_LABELS = {
+        horizontal: 'Horizontal line', row: 'Horizontal line',
+        vertical: 'Vertical line', column: 'Vertical line',
+        diagonal: 'Diagonal line',
+        four_corners: 'Four corners', corners: 'Four corners',
+        full_house: 'Full house', blackout: 'Full house'
+    };
+    const PATTERN_ALIASES = { row: 'horizontal', column: 'vertical', corners: 'four_corners', blackout: 'full_house' };
+
+    let patternsEdited = false;
+    document.addEventListener('change', (e) => {
+        if (e.target.closest && e.target.closest('#patternChecks, #patternsRequiredSelect')) patternsEdited = true;
+    });
+
+    async function loadWinningPatterns(force = false) {
+        try {
+            const s = await window.api.getSettings();
+            if (force) patternsEdited = false;
+            const list = String(s?.winning_patterns || '').split(',').map(p => p.trim()).filter(Boolean)
+                .map(p => PATTERN_ALIASES[p] || p);
+            const known = list.filter(p => PATTERN_LABELS[p]);
+            const required = Number(s?.patterns_required) || 1;
+            if (!patternsEdited) {
+                document.querySelectorAll('#patternChecks input[type=checkbox]').forEach(cb => {
+                    cb.checked = known.includes(cb.value);
+                });
+                document.getElementById('patternsRequiredSelect').value = String(Math.min(5, required));
+            }
+            const names = [...new Set(known.map(p => PATTERN_LABELS[p]))];
+            document.getElementById('patternsActive').textContent =
+                (names.length ? names.join(', ') : 'none') +
+                ` — a card needs ${required} pattern${required > 1 ? 's' : ''} to win. One winner is recorded per game; other cards can still be checked.`;
+            document.getElementById('patternsBadge').textContent = `${required} needed`;
+        } catch (e) {
+            console.error('Load winning patterns error:', e);
+        }
+    }
+
+    async function saveWinningPatterns() {
+        const chosen = [...document.querySelectorAll('#patternChecks input[type=checkbox]:checked')].map(cb => cb.value);
+        const required = parseInt(document.getElementById('patternsRequiredSelect').value, 10);
+        if (!chosen.length) return showMessage('Select at least one winning pattern', 'warning');
+        try {
+            const result = await window.api.updateSettings({
+                winning_patterns: chosen.join(','),
+                patterns_required: required
+            });
+            if (result?.success !== false) {
+                showMessage('✅ Winning patterns saved — they apply from the next card check', 'success');
+                await loadWinningPatterns(true);
+            } else {
+                showMessage(`Failed: ${result?.error || 'Unknown'}`, 'error');
+            }
+        } catch (e) {
+            showMessage('Error: ' + e.message, 'error');
+        }
+    }
+
     async function loadCallingInterval() {
         try {
             const s = await window.api.getSettings();
@@ -2700,7 +2796,8 @@
                 loadGameState(),
                 loadAllGames(),
                 loadJackpotStatus(),
-                loadCallingInterval()
+                loadCallingInterval(),
+                loadWinningPatterns()
             ]);
             showMessage('Data refreshed!', 'success');
         } catch (e) {
@@ -2839,5 +2936,6 @@
     })();
 </script>
 
+    <script src="/js/pwa-refresh.js?v=20261108" defer></script>
 </body>
 </html>

@@ -32,6 +32,8 @@ function parseGrid(cartelaNumbers) {
             grid[row][col] = nums[col * 5 + row];
         }
     }
+    // Free space: center cell is always marked
+    grid[2][2] = 0;
     return grid;
 }
 
@@ -124,9 +126,16 @@ function checkBingo(cartelaNumbers, calledNumbers, patterns = null, patternsRequ
     }
 
     if (hasRequired && !completedByLastCall) {
+        // The ball that first completed the required patterns: the win the player missed.
+        let missedNumber = null;
+        for (let i = 1; i < calledNumbers.length; i++) {
+            const r = checkBingo(cartelaNumbers, calledNumbers.slice(0, i), patterns, patternsRequired);
+            if (r.valid || r.late) { missedNumber = calledNumbers[i - 1]; break; }
+        }
         return {
             valid: false,
             late: true,
+            missedNumber,
             reason: `Card has ${foundPatterns.length} complete pattern(s), but none was completed by the last called number (${lastCalled})`,
             patterns: foundPatterns
         };

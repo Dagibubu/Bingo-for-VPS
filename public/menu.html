@@ -1017,22 +1017,21 @@
                     </div>
                 </a>
 
-                <!-- Card 2: Remaining balance (admin only) -->
-                <a href="/admin.html" class="dashboard-card has-label" data-admin-only data-card-id="balance">
+                <!-- Today Commission (admin only) -->
+                <a href="/index.html" class="dashboard-card has-label" data-admin-only data-card-id="todayCommission">
                     <div class="dashboard-card-body">
                         <div class="dashboard-card-icon">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
-                                <line x1="12" y1="20" x2="12" y2="10"></line>
-                                <line x1="18" y1="20" x2="18" y2="4"></line>
-                                <line x1="6" y1="20" x2="6" y2="16"></line>
+                                <line x1="12" y1="1" x2="12" y2="23"></line>
+                                <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
                             </svg>
                         </div>
 
                         <div class="dashboard-card-value-row">
-                            <div class="dashboard-card-value" id="cardBalance" data-amount="0.00">0.00</div>
+                            <div class="dashboard-card-value" id="cardTodayCommission" data-amount="0.00">0.00</div>
                             <button type="button" class="eye-btn"
-                                    data-target="cardBalance"
-                                    onclick="toggleAmountVisibility(event, 'cardBalance')"
+                                    data-target="cardTodayCommission"
+                                    onclick="toggleAmountVisibility(event, 'cardTodayCommission')"
                                     title="Hide / show amount">
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
                                     <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z"></path>
@@ -1040,7 +1039,41 @@
                                 </svg>
                             </button>
                         </div>
-                        <div class="dashboard-card-label">Remaining Balance</div>
+                        <div class="dashboard-card-label" id="cardTodayCommissionLabel">Today Commission</div>
+                    </div>
+                    <div class="dashboard-card-footer">
+                        <span>More info</span>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <polyline points="12 16 16 12 12 8"></polyline>
+                            <line x1="8" y1="12" x2="16" y2="12"></line>
+                        </svg>
+                    </div>
+                </a>
+
+                <!-- Jackpot Paid Today (admin only) -->
+                <a href="/index.html" class="dashboard-card has-label" data-admin-only data-card-id="todayJackpotPaid">
+                    <div class="dashboard-card-body">
+                        <div class="dashboard-card-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="12" cy="8" r="6"></circle>
+                                <path d="M15.477 12.89 17 22l-5-3-5 3 1.523-9.11"></path>
+                            </svg>
+                        </div>
+
+                        <div class="dashboard-card-value-row">
+                            <div class="dashboard-card-value" id="cardTodayJackpotPaid" data-amount="0.00">0.00</div>
+                            <button type="button" class="eye-btn"
+                                    data-target="cardTodayJackpotPaid"
+                                    onclick="toggleAmountVisibility(event, 'cardTodayJackpotPaid')"
+                                    title="Hide / show amount">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z"></path>
+                                    <circle cx="12" cy="12" r="3"></circle>
+                                </svg>
+                            </button>
+                        </div>
+                        <div class="dashboard-card-label" id="cardTodayJackpotPaidLabel">Jackpot Paid Today</div>
                     </div>
                     <div class="dashboard-card-footer">
                         <span>More info</span>
@@ -1097,7 +1130,7 @@
                 </a>
 
                 <!-- Card 5: Daily Game Count (admin only) -->
-                <a href="/game.html" class="dashboard-card has-label" data-admin-only data-card-id="dailyGameAmount">
+                <a href="/index.html" class="dashboard-card has-label" data-admin-only data-card-id="dailyGameAmount">
                     <div class="dashboard-card-body">
                         <div class="dashboard-card-icon">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
@@ -1500,7 +1533,8 @@
     /*  DASHBOARD DATA (runs for admin AND cashier)                  */
     /* ============================================================ */
     async function loadDashboardData() {
-        const today = new Date().toISOString().split('T')[0];
+        const now = new Date();
+        const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
 
         let daily = null;
         try {
@@ -1517,6 +1551,25 @@
                 const formatted = Number(sales).toLocaleString(undefined, { maximumFractionDigits: 0 });
                 el.dataset.amount = formatted;
                 if (!el.classList.contains('is-hidden')) el.textContent = formatted;
+            }
+        }
+
+        // ---- Today's commission and jackpot paid — admin only ----
+        if (isAdmin) {
+            const report = (daily?.success && daily.report) ? daily.report : {};
+            const money = (v) => Number(v || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            const setCard = (id, value) => {
+                const el = document.getElementById(id);
+                if (!el) return;
+                el.dataset.amount = value;
+                if (!el.classList.contains('is-hidden')) el.textContent = value;
+            };
+            setCard('cardTodayCommission', money(report.total_commission));
+            setCard('cardTodayJackpotPaid', money(report.total_jackpot_paid));
+            const jpLabel = document.getElementById('cardTodayJackpotPaidLabel');
+            if (jpLabel) {
+                const n = Number(report.jackpots_won || 0);
+                jpLabel.textContent = n ? `Jackpot Paid Today · ${n} win${n > 1 ? 's' : ''}` : 'Jackpot Paid Today';
             }
         }
 
@@ -1728,5 +1781,6 @@
     })();
 </script>
 
+    <script src="/js/pwa-refresh.js?v=20261108" defer></script>
 </body>
 </html>

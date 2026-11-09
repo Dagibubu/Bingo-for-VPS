@@ -268,7 +268,7 @@
             font-weight: 700;
             cursor: pointer;
             transition: all 0.15s ease;
-            box-shadow: 3px 4px 8px rgba(0,0,0,0.18);
+            box-shadow: 4px 5px 12px rgba(0,0,0,0.25), 0 2px 4px rgba(0,0,0,0.1);
             display: flex;
             align-items: center;
             justify-content: center;
@@ -287,10 +287,10 @@
         }
 
         .number-btn.selected {
-            background: linear-gradient(135deg, #ffb43a, #f59e0b);
+            background: #FF8500;
             color: white;
             border-color: #e8743a;
-            box-shadow: 4px 6px 14px rgba(255,139,73,0.5);
+            box-shadow: 4px 6px 16px rgba(255,133,0,0.5), 0 2px 6px rgba(255,133,0,0.3);
         }
 
         .number-btn.sold {
@@ -868,7 +868,31 @@
         @media print {
             .app-header, .control-row, .status-bar { display: none !important; }
         }
-    </style>
+    
+        /* ---- Cashier view: only the card grid, the game status and a back button ---- */
+        body.cashier-view .app-header,
+        body.cashier-view .select-card-panel,
+        body.cashier-view .control-row { display: none !important; }
+        body.cashier-view .page-content {
+            padding: max(8px, env(safe-area-inset-top)) 8px max(8px, env(safe-area-inset-bottom));
+            gap: 8px;
+        }
+        body.cashier-view .status-bar {
+            display: flex !important; justify-content: space-between; align-items: center;
+            gap: 10px; padding: 0 2px; flex-wrap: nowrap;
+        }
+        body.cashier-view .grid-outer { padding: 8px; }
+        body.cashier-view .grid-scroll { padding-right: 4px; }
+        .cashier-back {
+            display: none; align-items: center; gap: 6px; flex-shrink: 0;
+            padding: 10px 16px; border: none; border-radius: 8px;
+            background: linear-gradient(135deg, #6550ed, #5146b5); color: #fff;
+            font-family: inherit; font-weight: 700; font-size: 15px; cursor: pointer;
+            box-shadow: 0 3px 10px rgba(101,80,237,0.35);
+        }
+        .cashier-back svg { width: 18px; height: 18px; }
+        body.cashier-view .cashier-back { display: inline-flex; }
+</style>
 
   <link rel="manifest" href="/manifest.json">
   <meta name="theme-color" content="#0a0614">
@@ -897,7 +921,7 @@
             <span></span>
             <span></span>
         </div>
-        <div class="brand-text">BLACK BINGO</div>
+        <div class="brand-text">VIP BINGO</div>
         <div class="brand-logo">🎯</div>
     </div>
 
@@ -924,6 +948,10 @@
 
     <!-- Status -->
     <div class="status-bar">
+        <button type="button" class="cashier-back" onclick="goToMenu()" aria-label="Back to dashboard">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+            <span>Back</span>
+        </button>
         <div class="game-status" id="gameStatus">🟡 Loading…</div>
     </div>
 
@@ -1095,6 +1123,7 @@ function updateClock() {
 // Cashiers can only select and sell cards: no start, reset, sync, bet or pattern changes.
 function applyRoleUI() {
     if (isAdmin) return;
+    document.body.classList.add('cashier-view');
     const hide = (el) => { if (el) el.style.display = 'none'; };
     hide(document.getElementById('resetGamesBtn'));
     hide(document.querySelector('[onclick="syncPrevious()"]'));
@@ -1514,16 +1543,26 @@ async function syncPrevious() {
     try {
         showMessage('Syncing previous selections…', 'info');
         const games = await window.api.getAllGames();
-        if (!Array.isArray(games) || games.length === 0) {
+        // The previous game is the newest one, other than the game being sold now,
+        // that actually had cards sold.
+        const currentId = registrationState.activeGame?.gameId;
+        const game = (Array.isArray(games) ? games : [])
+            .filter(g => g.id !== currentId && g.status !== 'waiting' && Number(g.ticket_count) > 0)
+            .sort((x, y) => y.id - x.id)[0];
+        if (!game) {
             return showMessage('No previous game found', 'warning');
         }
-        const game = games.find(g => g.status === 'waiting') || games[0];
         const tickets = await window.api.getGameTickets(game.id);
-        const ids = (tickets || []).filter(t => t.status === 'active').map(t => parseInt(t.cartela_id));
+        // Every card that played in that game — including the winner and locked cards —
+        // except refunded ones and cards already sold in the current game.
+        const ids = [...new Set((tickets || [])
+            .filter(t => t.status !== 'refunded')
+            .map(t => parseInt(t.cartela_id, 10)))]
+            .filter(id => id && !registrationState.soldCards.has(id));
         const synced = await window.api.setSelectionMany(ids, true);
         if (synced?.success === false) throw new Error(synced.error || 'Could not sync');
         applySelection(synced);
-        showMessage(`Synced ${registrationState.selectedCards.size} cards`, 'success');
+        showMessage(`Synced ${ids.length} cards from ${game.game_number || 'game ' + game.id}`, 'success');
     } catch (e) {
         showMessage('Sync failed: ' + e.message, 'error');
     }
@@ -1841,5 +1880,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 </script>
 
+    <script src="/js/pwa-refresh.js?v=20261108" defer></script>
 </body>
 </html>

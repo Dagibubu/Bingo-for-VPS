@@ -67,17 +67,89 @@ class GameManager {
         }
     }
 
+    // A game left running/paused when the server process restarts is brought back
+    // PAUSED (same cards, same called numbers) so the admin can press RESUME and
+    // finish it, instead of the game being ended.
     async recoverOrphanedGames() {
         try {
-            const r = await run(`
-                UPDATE games SET status='finished', end_time=NOW(),
-                    notes='Auto-ended: server restart'
-                WHERE status IN ('running', 'paused')
-            `);
-            if (r.changes > 0) console.log(`✅ Recovered ${r.changes} orphaned games`);
+            const open = await all("SELECT id FROM games WHERE status IN ('running','paused') ORDER BY id");
+            for (const g of open) {
+                this._recoverGame(g.id).catch(e => console.error(`Recover game ${g.id} error:`, e));
+            }
         } catch (e) {
             console.error('Recovery error:', e);
         }
+    }
+
+    async _recoverGame(gameId, attempt = 0) {
+        if (this.activeGames.has(gameId)) return;
+        const row = await get(
+            `SELECT g.*, TIMESTAMPDIFF(SECOND, COALESCE(g.last_draw_time, g.start_time, g.created_at), NOW()) AS idle_s
+             FROM games g WHERE g.id = ?`,
+            [gameId]
+        );
+        if (!row || !['running', 'paused'].includes(row.status)) return;
+
+        // Numbers drawn in the last few seconds may come from another live process:
+        // look again shortly, and leave the game alone if it keeps being drawn.
+        if (row.status === 'running' && Number(row.idle_s) < 8) {
+            if (attempt < 3) setTimeout(() => this._recoverGame(gameId, attempt + 1).catch(() => {}), 4000);
+            else console.log(`↪️  Game ${gameId} is still being drawn elsewhere — not recovered`);
+            return;
+        }
+
+        // Left over from long ago: close it properly (records its commission).
+        if (Number(row.idle_s) > 2 * 3600) {
+            await this.endGame(gameId, 'Auto-ended: abandoned before server restart');
+            return;
+        }
+
+        const called = (await all('SELECT number FROM called_numbers WHERE game_id=? ORDER BY id', [gameId]))
+            .map(r => Number(r.number));
+        if (called.length >= 75) {
+            await this.endGame(gameId, 'All numbers called');
+            return;
+        }
+        const [salesRow, winnerRow] = await Promise.all([
+            get("SELECT COALESCE(SUM(price),0) AS total FROM tickets WHERE game_id=? AND status <> 'refunded'", [gameId]),
+            get('SELECT COUNT(*) AS c FROM winners WHERE game_id=?', [gameId])
+        ]);
+
+        let interval = parseInt(row.draw_interval, 10);
+        if (!Number.isFinite(interval) || interval < 100) interval = parseInt(this.settings.draw_interval, 10);
+        if (!Number.isFinite(interval) || interval < 100) interval = 4000;
+        const firstDrawDelay = Number.isFinite(this.settings.first_draw_delay_ms)
+            ? Math.max(0, this.settings.first_draw_delay_ms)
+            : 3500;
+
+        const numberCaller = new NumberCaller(interval, { firstDrawDelay });
+        const calledSet = new Set(called);
+        numberCaller.calledNumbers = [...called];
+        numberCaller.remainingNumbers = numberCaller.allNumbers.filter(n => !calledSet.has(n));
+        numberCaller.shuffle();
+        numberCaller.isRunning = false;
+        numberCaller.isPaused = true;
+
+        this.activeGames.set(gameId, {
+            id: gameId,
+            gameNumber: row.game_number,
+            prizePool: Number(row.prize_pool) || 0,
+            totalSales: Number(salesRow.total) || 0,
+            jackpotContribution: 0,
+            jackpotArmed: !!this.settings.jackpot_armed,
+            winnerCount: winnerRow.c,
+            maxWinners: 1,
+            winningPatterns: this.settings.winning_patterns.split(','),
+            patternsRequired: this.settings.patterns_required,
+            numberCaller,
+            isPaused: true
+        });
+        numberCaller.on('numberCalled', (s) => { this.onNumberCalled(gameId, s); });
+        numberCaller.on('completed', () => { this.endGame(gameId, 'All numbers called'); });
+
+        await run("UPDATE games SET status='paused' WHERE id=?", [gameId]);
+        console.log(`♻️  Game ${gameId} recovered after restart — PAUSED at ${called.length}/75, press RESUME to continue`);
+        await this.broadcastState();
     }
 
     // ============================================================
@@ -244,7 +316,17 @@ class GameManager {
 
     // Any game that is not finished yet. Only one of these may exist at a time.
     async getActiveGame() {
+        await this.finishPausedWonGames();
         return await get("SELECT * FROM games WHERE status IN ('running','paused','waiting') ORDER BY id DESC LIMIT 1");
+    }
+
+    // A game paused after a winner (waiting for more claims) is closed once a new game is requested.
+    async finishPausedWonGames(exceptId = null) {
+        const rows = await all(
+            "SELECT g.id FROM games g WHERE g.status='paused' AND g.id <> ? AND EXISTS (SELECT 1 FROM winners w WHERE w.game_id = g.id)",
+            [exceptId || 0]
+        );
+        for (const r of rows) await this.endGame(r.id, 'Closed for new game after winner(s)');
     }
 
     // Runs create/start one at a time so two clicks can't make two games.
@@ -335,11 +417,19 @@ class GameManager {
     // ============================================================
     // START GAME
     // ============================================================
+    // Starts run one at a time, so a double-tap on Play (or Play on two screens)
+    // can never start the same game twice.
     async startGame(gameId) {
+        return this._exclusive(() => this._startGame(gameId));
+    }
+
+    async _startGame(gameId) {
+        if (this.activeGames.has(gameId)) throw new Error('Game already started');
         const game = await this.getGame(gameId);
         if (!game) throw new Error('Game not found');
         if (game.status !== 'waiting') throw new Error(`Cannot start from status '${game.status}'`);
 
+        await this.finishPausedWonGames(gameId);
         const other = await get("SELECT * FROM games WHERE status IN ('running','paused') AND id <> ? LIMIT 1", [gameId]);
         if (other) throw new Error(`Game ${other.game_number} is still ${other.status}. Finish it before starting a new game.`);
 
@@ -363,6 +453,10 @@ class GameManager {
         const preJackpotContrib = totalSales * (preJackpotPct / 100);
 
         const prizePool = Math.max(0, totalSales - preCommissionAmount - preJackpotContrib);
+
+        // Claim the game: only one start request can move it out of 'waiting'.
+        const claim = await run("UPDATE games SET status='running' WHERE id=? AND status='waiting'", [gameId]);
+        if (!claim || claim.changes !== 1) throw new Error('Game already started');
 
         // No cashier wallet needed: games start without checking or deducting a wallet balance.
 
@@ -775,25 +869,27 @@ class GameManager {
     // CHECK CARTELA
     // ============================================================
     async checkCartela(cartelaId) {
-        const game = (await this.getRunningGame())
-            || await get("SELECT * FROM games WHERE status='paused' ORDER BY id DESC LIMIT 1");
+        const game = await get(
+            `SELECT * FROM games WHERE status IN ('running','paused','finished')
+             ORDER BY (status='running') DESC, (status='paused') DESC, id DESC LIMIT 1`
+        );
         if (!game) return { valid: false, reason: 'No active game' };
 
-        const ticket = await get(
-            `SELECT t.*, c.numbers FROM tickets t
-             JOIN cartelas c ON c.id = t.cartela_id
-             WHERE t.cartela_id=? AND t.game_id=?`,
-            [cartelaId, game.id]
-        );
+        const [ticket, calledRows] = await Promise.all([
+            get(
+                `SELECT t.*, c.numbers FROM tickets t
+                 JOIN cartelas c ON c.id = t.cartela_id
+                 WHERE t.cartela_id=? AND t.game_id=?`,
+                [cartelaId, game.id]
+            ),
+            all('SELECT number FROM called_numbers WHERE game_id=? ORDER BY id', [game.id])
+        ]);
         if (!ticket) return { valid: false, reason: 'Ticket not found' };
         if (ticket.status === 'disqualified') return { valid: false, reason: 'Ticket already disqualified' };
         if (ticket.status === 'refunded') return { valid: false, reason: 'Ticket refunded' };
         if (ticket.status === 'winner') return { valid: false, reason: 'Ticket already recorded as winner' };
 
-        const called = (await all(
-            'SELECT number FROM called_numbers WHERE game_id=? ORDER BY id',
-            [game.id]
-        )).map(r => r.number);
+        const called = calledRows.map(r => r.number);
 
         if (called.length === 0) return { valid: false, reason: 'No numbers called yet' };
 
@@ -828,23 +924,33 @@ class GameManager {
             return result;
         }
 
-        const winnerCount = (await get(
-            'SELECT COUNT(*) AS c FROM winners WHERE game_id=?',
-            [game.id]
-        )).c;
+        const [winnerRow, salesRow, s] = await Promise.all([
+            get('SELECT COUNT(*) AS c FROM winners WHERE game_id=?', [game.id]),
+            get("SELECT COALESCE(SUM(price),0) AS total FROM tickets WHERE game_id=? AND status <> 'refunded'", [game.id]),
+            get('SELECT * FROM settings WHERE id=1')
+        ]);
+        const winnerCount = winnerRow.c;
 
-        if (winnerCount >= this.settings.max_winners) {
-            return { valid: false, reason: `Max winners (${this.settings.max_winners}) reached` };
+        // Only one winner is recorded per game. Any other card that also won on the
+        // same last called number is reported (no record, no prize) so the cashier can
+        // share the money by hand.
+        if (winnerCount >= 1) {
+            console.log(`   🤝 #${cartelaId} ALSO WON on ${lastCalled} (not recorded — winner already recorded)`);
+            return {
+                valid: false,
+                alsoWinner: true,
+                type: result.patterns[0] || 'BINGO',
+                patterns: result.patterns,
+                lastCalledNumber: lastCalled
+            };
         }
 
-        const tickets = await all('SELECT * FROM tickets WHERE game_id=?', [game.id]);
-        const totalSales = tickets.reduce((s, t) => s + Number(t.price), 0);
+        const totalSales = Number(salesRow.total);
 
         const tier = await commissionService.resolveTier(totalSales);
         const commissionPct = tier.rate || 0;
         const commissionAmount = totalSales * (commissionPct / 100);
 
-        const s = await get('SELECT * FROM settings WHERE id=1');
         const jackpotOn = !!(s.jackpot_enabled);
         const jackpotPct = jackpotOn ? (s.jackpot_contribution_pct ?? 10) : 0;
         const jackpotContribution = totalSales * (jackpotPct / 100);
@@ -857,6 +963,7 @@ class GameManager {
             ` · Base prize = ${basePrize.toFixed(2)} Br`
         );
 
+        // No split: every winner on the same last called number gets the full prize.
         let prizeAmount = basePrize;
         let jackpotBonus = 0;
 
@@ -905,8 +1012,8 @@ class GameManager {
             [game.id]
         )).c;
 
-        if (winnerCount >= this.settings.max_winners) {
-            return { success: false, error: `Max winners (${this.settings.max_winners}) reached` };
+        if (winnerCount >= 1) {
+            return { success: false, error: 'A winner is already recorded for this game' };
         }
 
         const check = await this.checkCartela(cartelaId);
@@ -974,8 +1081,11 @@ class GameManager {
             patterns: check.patterns
         });
 
-        console.log(`🏁 AUTO-ENDING game ${game.id} after winner #${rank}`);
-        await this.endGame(game.id, `Winner #${rank} found — game ended`);
+        // One recorded winner ends the game. Other cards can still be checked
+        // afterwards; they are reported as "also won" without being recorded.
+        const gameEnded = true;
+        console.log(`🏁 ENDING game ${game.id} — winner recorded`);
+        await this.endGame(game.id, 'Winner found');
 
         return {
             success: true,
@@ -984,8 +1094,8 @@ class GameManager {
             jackpotBonus: jackpotWon,
             patterns: check.patterns,
             totalWinners: rank,
-            maxWinners: this.settings.max_winners,
-            gameEnded: true
+            maxWinners: 1,
+            gameEnded
         };
     }
 

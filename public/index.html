@@ -1449,7 +1449,8 @@
     ============================================================ */
     async function loadReports() {
         try {
-            const today = new Date().toISOString().split('T')[0];
+            const ymd = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+            const today = ymd(new Date());
             const daily = await window.api.getDailyReport(today);
             if (daily?.success) {
                 cachedDailyReport = daily.report;
@@ -1460,13 +1461,13 @@
                     <div class="report-stat"><div class="label">Games</div><div class="value">${r.total_games || 0}</div></div>
                     <div class="report-stat"><div class="label">Tickets</div><div class="value">${r.total_tickets_sold || 0}</div></div>
                     <div class="report-stat"><div class="label">Revenue</div><div class="value">${sales.toFixed(2)} Br</div></div>
-                    <div class="report-stat"><div class="label">House Profit</div><div class="value">${calc.houseShare.toFixed(2)} Br</div></div>
+                    <div class="report-stat"><div class="label">House Profit</div><div class="value">${Number(r.total_commission ?? calc.houseShare).toFixed(2)} Br</div></div>
                 `;
             }
 
             const weekStart = new Date();
             weekStart.setDate(weekStart.getDate() - 7);
-            const weekly = await window.api.getWeeklyReport(weekStart.toISOString().split('T')[0]);
+            const weekly = await window.api.getWeeklyReport(ymd(weekStart));
             if (weekly?.success) {
                 cachedWeeklyReport = weekly.report;
                 const r = weekly.report;
@@ -1476,7 +1477,7 @@
                     <div class="report-stat"><div class="label">Games</div><div class="value">${r.total_games || 0}</div></div>
                     <div class="report-stat"><div class="label">Tickets</div><div class="value">${r.total_tickets_sold || 0}</div></div>
                     <div class="report-stat"><div class="label">Revenue</div><div class="value">${sales.toFixed(2)} Br</div></div>
-                    <div class="report-stat"><div class="label">House Profit</div><div class="value">${calc.houseShare.toFixed(2)} Br</div></div>
+                    <div class="report-stat"><div class="label">House Profit</div><div class="value">${Number(r.total_commission ?? calc.houseShare).toFixed(2)} Br</div></div>
                 `;
             }
 
@@ -1491,7 +1492,7 @@
                     <div class="report-stat"><div class="label">Games</div><div class="value">${r.total_games || 0}</div></div>
                     <div class="report-stat"><div class="label">Tickets</div><div class="value">${r.total_tickets_sold || 0}</div></div>
                     <div class="report-stat"><div class="label">Revenue</div><div class="value">${sales.toFixed(2)} Br</div></div>
-                    <div class="report-stat"><div class="label">House Profit</div><div class="value">${calc.houseShare.toFixed(2)} Br</div></div>
+                    <div class="report-stat"><div class="label">House Profit</div><div class="value">${Number(r.total_commission ?? calc.houseShare).toFixed(2)} Br</div></div>
                 `;
             }
         } catch (e) {
@@ -1610,5 +1611,6 @@ async function loadRangeReport() {
 
 loadRangeReport();
 </script>
+    <script src="/js/pwa-refresh.js?v=20261108" defer></script>
 </body>
 </html>

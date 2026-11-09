@@ -226,7 +226,7 @@
 
         .board-tile.letter { background: var(--bingo-red); color: #FFFFFF; font-size: clamp(22px, 2.6vw, 40px); cursor: default; border: 4px solid var(--grid-border); }
         .board-tile.called { background: var(--tile-called); color: var(--called-blue); }
-        .board-tile.current { background: #FFFFFF; color: var(--tile-current-num); outline: 4px solid var(--tile-current-ring); outline-offset: -6px; border-radius: 8px; }
+        .board-tile.current { background: #FFFFFF; color: var(--tile-current-num); outline: 4px solid var(--tile-current-ring); outline-offset: -6px; border-radius: 4px; }
         .board-tile.winning { background: var(--tile-winning); color: var(--tile-winning-text); }
         .board-tile.winning.current { outline-color: var(--tile-current-ring); }
 
@@ -261,7 +261,7 @@
         .ctl-btn.back    { background: #6b7280; }
         .ctl-btn.back:hover:not(:disabled) { background: #4b5563; }
         .ctl-btn.shuffle { background: #4a4a4a; }
-        .ctl-btn.start   { background: var(--btn-start); }
+        .ctl-btn.start   { background: #FF0062; }
         .ctl-btn.pause   { background: var(--btn-pause); }
         .ctl-btn.check   { background: var(--btn-start); }
         .ctl-btn.reset   { background: var(--btn-reset); }
@@ -313,6 +313,8 @@
         .card-preview .cp-cell.free { background: #FFF7CC; font-weight: 800; font-size: 14px; }
         .card-preview .cp-cell.called { background: #FFA640; color: #FFFFFF; }
         .card-preview .cp-cell.winning { background: var(--tile-winning); color: #FFFFFF; }
+        .card-preview .cp-cell.called-hit { background: #22C55E; color: #FFFFFF; }
+        .card-preview .cp-cell.missed { background: #F44336; color: #FFFFFF; font-weight: 900; outline: 3px solid #B71C1C; outline-offset: -3px; }
 
         .check-dialog-controls {
             display: flex; flex-direction: column; gap: 14px; padding-top: 40px;
@@ -577,6 +579,7 @@ const AMHARIC = {
     disqualified: 'ካርድ ተሰርዟል',
     notWinner:    'ያሸነፈ ካርድ አይደለም',
     lateClaim:    'ይህ ካርቴላ አልፎታል',
+    alsoWinner:   'ይህ ካርቴላም አሸንፏል!',
     winner:       'እንኳን ደስ አለህ! ቢንጎ!',
     checking:     'በመፈተሽ ላይ...',
     lockReady:    'ተቆልፎ ለመሰረዝ ይጫኑ',
@@ -610,6 +613,8 @@ let gameState = {
     currentCheckedCard: null,
     winningNumbers: new Set(),
     pendingLockCardId: null,
+    lateCardId: null,
+    lateMissedNumber: null,
 
     jackpotEnabled: false,
     jackpotAmount: 0,
@@ -827,18 +832,31 @@ function preloadAudioFiles() {
             audioCache[key] = new Audio(`/assets/sounds/${file}.mp3`);
         }
 
-        // Number sounds load a few at a time so the page and live updates aren't starved on a weak
-        // connection. Any number needed earlier is loaded on demand (see playNumberSound).
+        // Number sounds load as fast as the connection allows, a few at a time, each one
+        // starting as soon as the previous finishes. Any number needed before its file is
+        // ready is handled by playNumberSound (it never plays late on top of the next call).
         if (navigator.connection?.saveData) return;
         const queue = [];
         for (let i = 1; i <= 75; i++) queue.push(i);
-        const loadNext = () => {
-            queue.splice(0, 3).forEach(i => {
-                if (!audioCache[i]) audioCache[i] = new Audio(`/assets/sounds/${i}.mp3`);
-            });
-            if (queue.length) setTimeout(loadNext, 1500);
+        let active = 0;
+        const loadMore = () => {
+            while (active < NUMBER_PRELOAD_PARALLEL && queue.length) {
+                const i = queue.shift();
+                if (audioCache[i]) continue;
+                const a = new Audio();
+                a.preload = 'auto';
+                active++;
+                let done = false;
+                const finish = () => { if (done) return; done = true; active--; loadMore(); };
+                a.addEventListener('canplaythrough', finish, { once: true });
+                a.addEventListener('error', finish, { once: true });
+                setTimeout(finish, 8000);
+                a.src = `/assets/sounds/${i}.mp3`;
+                a.load();
+                audioCache[i] = a;
+            }
         };
-        setTimeout(loadNext, 2000);
+        setTimeout(loadMore, 500);
         console.log('🔊 Sounds loading in the background.');
     } catch (e) {}
 }
@@ -869,6 +887,12 @@ if (audioChannel) {
     window.addEventListener('pointerdown', claimAudio);
 }
 
+const NUMBER_PRELOAD_PARALLEL = 4;
+// A number's voice that is not ready within this time is skipped (the number is still
+// shown) so it can never play on top of the next call.
+const LATE_SOUND_LIMIT_MS = 1500;
+let currentNumberAudio = null;
+
 function playNumberSound(n) {
     if (!gameState.audioEnabled || !isAudioOwner) return;
 
@@ -878,12 +902,33 @@ function playNumberSound(n) {
     }
 
     try {
-        if (!audioCache[n]) audioCache[n] = new Audio(`/assets/sounds/${n}.mp3`);
-        if (audioCache[n]) {
-            audioCache[n].pause();
-            audioCache[n].currentTime = 0;
-            audioCache[n].volume = 0.8;
-            audioCache[n].play().catch(() => {});
+        // Only one number speaks at a time: a new call silences the previous one.
+        if (currentNumberAudio) currentNumberAudio.pause();
+
+        if (!audioCache[n]) {
+            audioCache[n] = new Audio(`/assets/sounds/${n}.mp3`);
+            audioCache[n].preload = 'auto';
+        }
+        const a = audioCache[n];
+        currentNumberAudio = a;
+        a.volume = 0.8;
+        const requestedAt = Date.now();
+
+        const start = () => {
+            if (currentNumberAudio !== a) return;
+            if (Date.now() - requestedAt > LATE_SOUND_LIMIT_MS) {
+                console.log(`🔇 Skipping late sound ${n} (${Date.now() - requestedAt}ms)`);
+                return;
+            }
+            try { a.currentTime = 0; } catch (e) {}
+            a.play().catch(() => {});
+        };
+
+        if (a.readyState >= 3) {
+            start();
+        } else {
+            a.addEventListener('canplaythrough', start, { once: true });
+            if (a.readyState === 0 && a.networkState !== HTMLMediaElement.NETWORK_LOADING) a.load();
         }
     } catch (e) {}
 }
@@ -1008,6 +1053,7 @@ function updatePrizeDisplay() {
 /* ============================================================ */
 function clearBoard() {
     stopFirstDrawCountdown();
+    clearAnnounceQueue();
 
     for (let i = 1; i <= 75; i++) {
         const cell = document.getElementById('n' + i);
@@ -1036,7 +1082,36 @@ function clearBoard() {
 }
 
 /* ============================================================ */
-/*  INSTANT NUMBER DISPLAY (No Queue)                            */
+/*  ANNOUNCE QUEUE                                               */
+/* ============================================================ */
+// Every new number goes through here, in draw order, so each one is shown and
+// spoken even when the socket delivers late and the poll finds 2–3 at once.
+const ANNOUNCE_GAP_MS = 1500;
+const MAX_SPOKEN_CATCHUP = 3;
+let announceQueue = [];
+let announceTimer = null;
+
+function queueAnnounce(nums) {
+    for (const n of nums) {
+        if (!gameState.calledNumbers.includes(n) && !announceQueue.includes(n)) announceQueue.push(n);
+    }
+    if (!announceTimer) drainAnnounceQueue();
+}
+
+function drainAnnounceQueue() {
+    const n = announceQueue.shift();
+    if (n == null) { announceTimer = null; return; }
+    showNumberInstant(n);
+    announceTimer = setTimeout(drainAnnounceQueue, ANNOUNCE_GAP_MS);
+}
+
+function clearAnnounceQueue() {
+    announceQueue = [];
+    if (announceTimer) { clearTimeout(announceTimer); announceTimer = null; }
+}
+
+/* ============================================================ */
+/*  INSTANT NUMBER DISPLAY                                       */
 /* ============================================================ */
 function showNumberInstant(num) {
     // If it's already displayed, skip
@@ -1163,20 +1238,29 @@ function forceFullSync(state) {
 
     // ---- Instantly display ALL called numbers that we don't have yet ----
     const displayed = new Set(gameState.calledNumbers);
-    const pending = dbCalled.filter(n => !displayed.has(n));
+    const pending = dbCalled.filter(n => !displayed.has(n) && !announceQueue.includes(n));
 
     if (pending.length > 0) {
         pending.sort((a, b) => dbCalled.indexOf(a) - dbCalled.indexOf(b));
-        // Catch-up after a stall: mark the missed numbers on the board quietly and
-        // announce only the newest one, instead of firing every sound at once.
-        const missed = pending.slice(0, -1);
-        for (const num of missed) {
-            gameState.calledNumbers.push(num);
-            const c = document.getElementById('n' + num);
-            if (c) c.classList.add('called');
+        const backlog = announceQueue.length + pending.length;
+        if (backlog <= MAX_SPOKEN_CATCHUP) {
+            // A late socket: announce each missing number in order, each with its sound.
+            queueAnnounce(pending);
+        } else {
+            // Long gap (page reload or a real stall): mark everything quietly and
+            // announce only the newest, instead of firing a burst of sounds.
+            const quiet = [...announceQueue, ...pending];
+            clearAnnounceQueue();
+            const newest = quiet.pop();
+            for (const num of quiet) {
+                if (gameState.calledNumbers.includes(num)) continue;
+                gameState.calledNumbers.push(num);
+                const c = document.getElementById('n' + num);
+                if (c) c.classList.add('called');
+            }
+            if (quiet.length) console.warn(`⏩ Caught up ${quiet.length} number(s) quietly: ${quiet.join(', ')}`);
+            showNumberInstant(newest);
         }
-        if (missed.length) console.warn(`⏩ Caught up ${missed.length} missed number(s): ${missed.join(', ')}`);
-        showNumberInstant(pending[pending.length - 1]);
     }
 
     // Update lastCalled (used by the UI for the big ball)
@@ -1451,6 +1535,9 @@ async function previewCartela(cartelaNum) {
                 display = n === 0 ? '' : n;
 
                 if (n && gameState.winningNumbers.has(n)) cls = 'winning';
+                else if (gameState.lateCardId === cartelaNum && n && gameState.calledNumbers.includes(n)) {
+                    cls = (n === gameState.lateMissedNumber) ? 'missed' : 'called-hit';
+                }
                 else if (n && gameState.calledNumbers.includes(n)) cls = 'called';
             }
 
@@ -1517,35 +1604,26 @@ async function checkTicket() {
         return showMessage('Enter a card number', 'warning');
     }
 
-    await previewCartela(cartelaNum);
+    gameState.lateCardId = null;
+    gameState.lateMissedNumber = null;
+    gameState.winningNumbers.clear();
 
     const btn = document.getElementById('quickCheckBtn');
     btn.disabled = true;
     btn.textContent = 'CHECKING…';
-    setAmharicMessage(AMHARIC.checking, 'success');
+    setAmharicMessage(AMHARIC.empty);
 
     try {
         if (!gameState.soldCartelas.has(cartelaNum)) {
+            previewCartela(cartelaNum);
             setAmharicMessage(AMHARIC.notSold, 'error');
             showMessage(`❌ Card #${cartelaNum} not sold in this game`, 'error');
             return;
         }
 
-        const tickets = await window.api.getGameTickets(gameState.gameId);
-        const ticket = tickets?.find(t => t.cartela_id == cartelaNum);
-
-        if (ticket && (ticket.status === 'disqualified' || ticket.disqualified)) {
-            setAmharicMessage(AMHARIC.disqualified, 'error');
-            showMessage(`⛔ Card #${cartelaNum} is already DISQUALIFIED`, 'error');
-            return;
-        }
-
-        const cartela = await window.api.getCartelaById(cartelaNum);
-        if (!cartela) {
-            setAmharicMessage(AMHARIC.noCard, 'error');
-            return showMessage(`Card #${cartelaNum} not found`, 'error');
-        }
-
+        // Card preview and the server check run at the same time; the result is announced
+        // as soon as the check returns.
+        const previewDone = previewCartela(cartelaNum);
         const winnerCheck = await window.api.checkCartela(cartelaNum);
 
         if (winnerCheck?.valid) {
@@ -1554,20 +1632,13 @@ async function checkTicket() {
             const result = await window.api.recordWinner(cartelaNum, winnerCheck.type || 'bingo', prizeAmount);
 
             if (result?.success) {
-                await window.api.pauseGame();
-                gameState.isRunning = false;
-                const winnerRank = await getWinnerRank(cartelaNum);
-
-                let cartelaNums = [];
-                if (typeof cartela.numbers === 'string') cartelaNums = cartela.numbers.split(',').map(Number);
-                else if (Array.isArray(cartela.numbers)) cartelaNums = cartela.numbers;
-
-                const calledSet = new Set(gameState.calledNumbers);
+                if (result.gameEnded) {
+                    gameState.isRunning = false;
+                } else {
+                    gameState.isPaused = true;
+                }
+                const winnerRank = result.totalWinners || winnerCheck.winnerRank || 1;
                 const patterns = winnerCheck.patterns || [winnerCheck.type || 'BINGO'];
-                gameState.winningNumbers = computeWinningNumbers(cartelaNums, calledSet, patterns);
-
-                forceFullSync(await window.api.getState());
-                await previewCartela(cartelaNum);
 
                 if (jackpotBonus > 0) {
                     setAmharicMessage('🎰 ጃክፖት አሸንፈዋል!', 'success');
@@ -1577,24 +1648,88 @@ async function checkTicket() {
                     setAmharicMessage(AMHARIC.winner, 'success');
                 }
                 showMessage(`🏆 WINNER! #${cartelaNum} wins ${prizeAmount.toFixed(2)} Br`, 'success');
-
                 celebrate(cartelaNum, prizeAmount, patterns, winnerRank);
+
+                if (!result.gameEnded && result.maxWinners > result.totalWinners) {
+                    setTimeout(() => {
+                        showMessage(`Winner ${result.totalWinners}/${result.maxWinners} recorded. If another player claims bingo, check their card.`, 'info');
+                    }, 3000);
+                }
+
+                await previewDone;
+                const cartela = gameState.currentCheckedCard;
+                let cartelaNums = [];
+                if (cartela && typeof cartela.numbers === 'string') cartelaNums = cartela.numbers.split(',').map(Number);
+                else if (cartela && Array.isArray(cartela.numbers)) cartelaNums = cartela.numbers;
+                gameState.winningNumbers = computeWinningNumbers(cartelaNums, new Set(gameState.calledNumbers), patterns);
+                await previewCartela(cartelaNum);
+                window.api.getState().then(forceFullSync).catch(() => {});
+            } else {
+                setAmharicMessage('ስህተት ተፈጥሯል', 'error');
+                showMessage('Failed to record winner: ' + (result?.error || 'unknown'), 'error');
             }
-        } else if (winnerCheck?.late) {
-            // LATE CLAIM: the card completed the required pattern(s) on an earlier
-            // ball, but was only checked now. Announce the late-claim message and lock it.
+            return;
+        }
+
+        if (winnerCheck?.alsoWinner) {
+            // A winner is already recorded; this card also won on the same last ball.
+            // Nothing is recorded — the cashier shares the prize by hand.
+            await previewDone;
+            const cartela = gameState.currentCheckedCard;
+            let cartelaNums = [];
+            if (cartela && typeof cartela.numbers === 'string') cartelaNums = cartela.numbers.split(',').map(Number);
+            else if (cartela && Array.isArray(cartela.numbers)) cartelaNums = cartela.numbers;
+            const patterns = winnerCheck.patterns || [winnerCheck.type || 'BINGO'];
+            gameState.winningNumbers = computeWinningNumbers(cartelaNums, new Set(gameState.calledNumbers), patterns);
+            await previewCartela(cartelaNum);
+            playSound('win');
+            setAmharicMessage(AMHARIC.alsoWinner, 'success');
+            showMessage(`🤝 Card #${cartelaNum} ALSO has BINGO on ball ${winnerCheck.lastCalledNumber ?? ''} — not recorded, share the prize by hand`, 'success');
+            return;
+        }
+
+        const reason = winnerCheck?.reason || '';
+        if (/disqualified/i.test(reason)) {
+            await previewDone;
+            playSound('nowin');
+            setAmharicMessage(AMHARIC.disqualified, 'error');
+            showMessage(`⛔ Card #${cartelaNum} is already DISQUALIFIED`, 'error');
+            return;
+        }
+        if (/already recorded as winner/i.test(reason)) {
+            await previewDone;
+            showMessage(`🏆 Card #${cartelaNum} is already recorded as a winner`, 'info');
+            return;
+        }
+        if (/not found/i.test(reason)) {
+            await previewDone;
+            setAmharicMessage(AMHARIC.notSold, 'error');
+            showMessage(`❌ Card #${cartelaNum} not sold in this game`, 'error');
+            return;
+        }
+
+        if (winnerCheck?.late) {
+            // Completed the pattern on an earlier ball but was only checked now:
+            // called numbers green, the missed winning ball red, then lock the card.
             playSound('lateClaim');
             setAmharicMessage(AMHARIC.lateClaim, 'error');
-            showMessage(`⏱️ Card #${cartelaNum} completed the pattern on an earlier ball — claimed late. Locking card…`, 'warning');
+            showMessage(`⏱️ Card #${cartelaNum} completed the pattern on ball ${winnerCheck.missedNumber ?? '?'} — claimed late. Locking card…`, 'warning');
+            await previewDone;
+            gameState.lateCardId = cartelaNum;
+            gameState.lateMissedNumber = winnerCheck.missedNumber ?? null;
+            await previewCartela(cartelaNum);
             gameState.pendingLockCardId = cartelaNum;
-            await lockAndDisqualify(true);   // auto-lock; voice already announced it
+            await lockAndDisqualify(true);
             return;
-        } else {
-            // Not a winner — play the "no win" sound
-            playSound('nowin');
-            setAmharicMessage(AMHARIC.notWinner, 'error');
-            showMessage(`ℹ️ Card #${cartelaNum} not a winner`, 'info');
         }
+
+        playSound('nowin');
+        setAmharicMessage(AMHARIC.notWinner, 'error');
+        showMessage(`ℹ️ Card #${cartelaNum} not a winner`, 'info');
+        await previewDone;
+        gameState.lateCardId = cartelaNum;
+        gameState.lateMissedNumber = null;
+        await previewCartela(cartelaNum);
 
         gameState.pendingLockCardId = cartelaNum;
         setCheckButtonMode('lock');
@@ -1872,11 +2007,11 @@ async function pauseGame() {
     if (isPauseResumeInProgress) return;
     isPauseResumeInProgress = true;
 
-    // ── Play pause sound immediately, before any network call ──
-    playSound('pause');
+    // The "game paused" voice plays only when pausing, before any network call.
+    const wasPaused = gameState.isPaused;
+    if (!wasPaused) playSound('pause');
 
     // ── Optimistic UI: flip the pause state and update button instantly ──
-    const wasPaused = gameState.isPaused;
     gameState.isPaused = !wasPaused;
     const pauseBtn = document.getElementById('pauseBtn');
     if (pauseBtn) {
@@ -2283,8 +2418,8 @@ function setupEventListeners() {
     }
     if (window.api.onNumberCalled) {
         window.api.onNumberCalled((number) => {
-            // Instantly show the number the moment the socket fires
-            showNumberInstant(number);
+            // Shown at once unless an earlier number is still being announced
+            queueAnnounce([number]);
             stopFirstDrawCountdown();
         });
     }
@@ -2433,5 +2568,6 @@ async function autoShuffleOnLoad() {
 })();
 </script>
 
+    <script src="/js/pwa-refresh.js?v=20261108" defer></script>
 </body>
 </html>

@@ -602,10 +602,10 @@ router.post('/games/start', requireAdmin, async (req, res) => {
         if (!waiting) return res.status(400).json({ success: false, error: 'No waiting game' });
 
         const result = await gm.startGame(waiting.id);
-
+        
         // Immediately push the fresh state to all connected clients
         if (gm.broadcastState) gm.broadcastState();
-
+        
         res.json(result);
     } catch (e) {
         res.status(400).json({ success: false, error: e.message });
@@ -617,12 +617,12 @@ router.post('/games/pause', requireAdmin, async (req, res) => {
         const gm = req.app.get('gameManager');
         const running = await gm.getRunningGame();
         if (!running) return res.status(400).json({ success: false, error: 'No running game' });
-
+        
         const result = await gm.pauseGame(running.id);
-
+        
         // Immediately push the fresh state to all connected clients
         if (gm.broadcastState) gm.broadcastState();
-
+        
         res.json(result);
     } catch (e) {
         res.status(400).json({ success: false, error: e.message });
@@ -636,12 +636,12 @@ router.post('/games/toggle-pause', requireAdmin, async (req, res) => {
         const paused = await get("SELECT * FROM games WHERE status='paused' ORDER BY id DESC LIMIT 1");
         const game = running || paused;
         if (!game) return res.status(400).json({ success: false, error: 'No active game' });
-
+        
         const result = await gm.togglePause(game.id);
-
+        
         // Immediately push the fresh state to all connected clients
         if (gm.broadcastState) gm.broadcastState();
-
+        
         res.json(result);
     } catch (e) {
         res.status(400).json({ success: false, error: e.message });
@@ -652,12 +652,12 @@ router.post('/games/finish', requireAdmin, async (req, res) => {
     try {
         const gm = req.app.get('gameManager');
         const { gameId, reason } = req.body;
-
+        
         const result = await gm.finishGame(gameId, reason);
-
+        
         // Immediately push the fresh state to all connected clients
         if (gm.broadcastState) gm.broadcastState();
-
+        
         res.json(result);
     } catch (e) {
         res.status(400).json({ success: false, error: e.message });
@@ -668,12 +668,12 @@ router.post('/games/reset', requireAdmin, async (req, res) => {
     try {
         const gm = req.app.get('gameManager');
         const { gameId, reason } = req.body;
-
+        
         const result = await gm.resetGame(gameId, reason);
-
+        
         // Immediately push the fresh state to all connected clients
         if (gm.broadcastState) gm.broadcastState();
-
+        
         res.json(result);
     } catch (e) {
         res.status(400).json({ success: false, error: e.message });
@@ -798,10 +798,10 @@ router.post('/winners/record', async (req, res) => {
         const { cartelaNumber, prizeType, prizeAmount } = req.body;
         const result = await gm.recordWinner(cartelaNumber, prizeType, prizeAmount);
         res.json(result);
-
+        
         // Immediately push the fresh state to all connected clients
         if (gm.broadcastState) gm.broadcastState();
-
+        
     } catch (e) {
         res.status(500).json({ success: false, error: e.message });
     }
@@ -870,33 +870,49 @@ router.get('/reports/range', requireAdmin, async (req, res) => {
     }
 });
 
+// Daily/weekly/monthly use the same basis as /reports/range: games started in the
+// period, the non-refunded cards in those games, and the commission recorded for them.
+async function periodStats(from, to) {
+    return await get(`
+        SELECT
+            (SELECT COUNT(*) FROM games g
+                WHERE DATE(g.start_time) BETWEEN ? AND ?) AS total_games,
+            (SELECT COUNT(*) FROM tickets t JOIN games g ON g.id = t.game_id
+                WHERE DATE(g.start_time) BETWEEN ? AND ? AND t.status <> 'refunded') AS total_tickets_sold,
+            (SELECT COALESCE(SUM(t.price), 0) FROM tickets t JOIN games g ON g.id = t.game_id
+                WHERE DATE(g.start_time) BETWEEN ? AND ? AND t.status <> 'refunded') AS total_sales,
+            (SELECT COUNT(*) FROM winners w JOIN games g ON g.id = w.game_id
+                WHERE DATE(g.start_time) BETWEEN ? AND ?) AS total_winners,
+            (SELECT COALESCE(SUM(w.prize_amount), 0) FROM winners w JOIN games g ON g.id = w.game_id
+                WHERE DATE(g.start_time) BETWEEN ? AND ?) AS total_prizes,
+            (SELECT COALESCE(SUM(wt.amount), 0) FROM wallet_transactions wt JOIN games g ON g.id = wt.reference_id
+                WHERE wt.transaction_type = 'commission' AND DATE(g.start_time) BETWEEN ? AND ?) AS total_commission,
+            (SELECT COALESCE(SUM(jh.amount), 0) FROM jackpot_history jh JOIN games g ON g.id = jh.game_id
+                WHERE jh.event_type = 'win' AND DATE(g.start_time) BETWEEN ? AND ?) AS total_jackpot_paid,
+            (SELECT COUNT(*) FROM jackpot_history jh JOIN games g ON g.id = jh.game_id
+                WHERE jh.event_type = 'win' AND DATE(g.start_time) BETWEEN ? AND ?) AS jackpots_won
+    `, [from, to, from, to, from, to, from, to, from, to, from, to, from, to, from, to]);
+}
+
+const isYmd = (d) => typeof d === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(d);
+const localYmd = (d = new Date()) =>
+    `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+
 router.get('/reports/daily', requireAdmin, async (req, res) => {
     try {
-        const date = req.query.date || new Date().toISOString().split('T')[0];
-        const stats = await get(`
-            SELECT
-                (SELECT COUNT(*) FROM games WHERE DATE(start_time)=?) AS total_games,
-                (SELECT COUNT(*) FROM tickets WHERE DATE(created_at)=?) AS total_tickets_sold,
-                (SELECT COALESCE(SUM(price),0) FROM tickets WHERE DATE(created_at)=?) AS total_sales,
-                (SELECT COUNT(*) FROM winners WHERE DATE(win_time)=?) AS total_winners
-        `, [date, date, date, date]);
+        const date = isYmd(req.query.date) ? req.query.date : localYmd();
+        const stats = await periodStats(date, date);
         res.json({ success: true, report: { report_date: date, ...stats } });
-    } catch (e) { res.status(500).json({ success: false, error: 'Server error' }); }
+    } catch (e) { console.error('Daily report error:', e); res.status(500).json({ success: false, error: 'Server error' }); }
 });
 
 router.get('/reports/weekly', requireAdmin, async (req, res) => {
     try {
-        const start = req.query.start || new Date(Date.now() - 7 * 86400000).toISOString().split('T')[0];
-        const end = new Date().toISOString().split('T')[0];
-        const stats = await get(`
-            SELECT
-                (SELECT COUNT(*) FROM games WHERE DATE(start_time) BETWEEN ? AND ?) AS total_games,
-                (SELECT COUNT(*) FROM tickets WHERE DATE(created_at) BETWEEN ? AND ?) AS total_tickets_sold,
-                (SELECT COALESCE(SUM(price),0) FROM tickets WHERE DATE(created_at) BETWEEN ? AND ?) AS total_sales,
-                (SELECT COUNT(*) FROM winners WHERE DATE(win_time) BETWEEN ? AND ?) AS total_winners
-        `, [start, end, start, end, start, end, start, end]);
+        const start = isYmd(req.query.start) ? req.query.start : localYmd(new Date(Date.now() - 7 * 86400000));
+        const end = localYmd();
+        const stats = await periodStats(start, end);
         res.json({ success: true, report: { start_date: start, end_date: end, ...stats } });
-    } catch (e) { res.status(500).json({ success: false, error: 'Server error' }); }
+    } catch (e) { console.error('Weekly report error:', e); res.status(500).json({ success: false, error: 'Server error' }); }
 });
 
 router.get('/reports/monthly', requireAdmin, async (req, res) => {
@@ -905,16 +921,10 @@ router.get('/reports/monthly', requireAdmin, async (req, res) => {
         const year = parseInt(req.query.year) || now.getFullYear();
         const month = parseInt(req.query.month) || (now.getMonth() + 1);
         const start = `${year}-${String(month).padStart(2, '0')}-01`;
-        const end = new Date(year, month, 0).toISOString().split('T')[0];
-        const stats = await get(`
-            SELECT
-                (SELECT COUNT(*) FROM games WHERE DATE(start_time) BETWEEN ? AND ?) AS total_games,
-                (SELECT COUNT(*) FROM tickets WHERE DATE(created_at) BETWEEN ? AND ?) AS total_tickets_sold,
-                (SELECT COALESCE(SUM(price),0) FROM tickets WHERE DATE(created_at) BETWEEN ? AND ?) AS total_sales,
-                (SELECT COUNT(*) FROM winners WHERE DATE(win_time) BETWEEN ? AND ?) AS total_winners
-        `, [start, end, start, end, start, end, start, end]);
+        const end = `${year}-${String(month).padStart(2, '0')}-${String(new Date(year, month, 0).getDate()).padStart(2, '0')}`;
+        const stats = await periodStats(start, end);
         res.json({ success: true, report: { year, month, ...stats } });
-    } catch (e) { res.status(500).json({ success: false, error: 'Server error' }); }
+    } catch (e) { console.error('Monthly report error:', e); res.status(500).json({ success: false, error: 'Server error' }); }
 });
 
 // ============================================================
